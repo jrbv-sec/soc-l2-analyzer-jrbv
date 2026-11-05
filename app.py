@@ -123,7 +123,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Inicialización segura de la API Key
+# Inicialización de la API Key
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 client_new = None
 
@@ -487,9 +487,9 @@ usuarios_implicados = [
 ]
 str_usuarios = ", ".join(usuarios_implicados[:8])
 
-# Tarjeta de resumen visual
+# Tarjeta de resumen visual (st.columns(2) especificado)
 with st.container():
-  c1, c2 = st.columns()
+  c1, c2 = st.columns(2)
   with c1:
     st.markdown(f"#### 🔎 **{inc_meta['title']}**")
     st.markdown(
@@ -566,7 +566,7 @@ def modal_dictamen_ia(texto_ia, inc_titulo):
   )
 
 
-col_btn_ia, col_enlace_ia = st.columns()
+col_btn_ia, col_enlace_ia = st.columns(2)
 with col_btn_ia:
   ejecutar_ia = st.button(f"Ejecutar Análisis IA ({selected_inc_key})")
 
@@ -781,9 +781,9 @@ st.markdown(
     f"### ⚖️ 4. Matriz de Clasificación de Riesgos ({selected_inc_key})"
 )
 
-# Banner Ejecutivo Resumido
+# Banner Ejecutivo Resumido (st.columns(2) especificado)
 with st.container():
-  col_m1, col_m2 = st.columns()
+  col_m1, col_m2 = st.columns(2)
   with col_m1:
     st.markdown(
         f"**Nivel de Riesgo Global:** `{inc_meta['risk_level']}` &nbsp;|&nbsp;"
