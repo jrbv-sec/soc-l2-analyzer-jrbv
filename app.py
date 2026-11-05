@@ -169,7 +169,7 @@ with st.sidebar:
 # ==========================================================
 # 1. CARGA DE ARCHIVOS
 # ==========================================================
-st.markdown("### 📥 1. Ingesta de Telemetría (Security Event Logs)")
+st.markdown("### 📥 1. Carga de archivos (Security Event Logs)")
 uploaded_file = st.file_uploader(
     "Cargar dataset consolidado de seguridad (.CSV)",
     type=["csv", "txt", "log"],
@@ -260,7 +260,7 @@ df["Vector_Analitico"] = df.apply(clasificar_vector, axis=1)
 # 2. ANÁLISIS DE SEGURIDAD - SELECTOR DE INCIDENTES Y CORRELACIÓN DE KILL CHAIN
 # ==========================================================
 st.markdown("---")
-st.markdown("### 🎯 2. Selector Maestro de Incidentes Correlacionados")
+st.markdown("### 🎯 2. Análisis de Seguridad - Selector Maestro de Incidentes Correlacionados")
 
 catalog_incidentes = {
     "INC-ALL": {
