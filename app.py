@@ -65,6 +65,19 @@ else:
 st.header("2. Detección y Correlación de Cadenas de Ataque")
 
 # Identificación de eventos críticos / sospechosos
+#suspicious_mask = (
+#    df["Severity"].isin(["High", "Warning", "Critical"])
+#    | df["Process_CommandLine"].str.contains(
+#        "powershell|cmd|vssadmin|net |whoami|-enc|tar|admin|api",
+#        case=False,
+#        na=False,
+#    )
+#    | df["Event_ID"].isin()
+#)
+# CÓDIGO CORREGIDO:
+# Convertimos Event_ID a string para asegurar compatibilidad sin importar el tipo de dato
+event_ids_criticos = ["4104", "4698", "7045", "5145", 4104, 4698, 7045, 5145]
+
 suspicious_mask = (
     df["Severity"].isin(["High", "Warning", "Critical"])
     | df["Process_CommandLine"].str.contains(
@@ -72,7 +85,7 @@ suspicious_mask = (
         case=False,
         na=False,
     )
-    | df["Event_ID"].isin()
+    | df["Event_ID"].isin(event_ids_criticos)
 )
 suspicious_df = df[suspicious_mask].copy()
 
