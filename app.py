@@ -9,11 +9,21 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 import streamlit as st
 
-# Importación segura del SDK de IA
+# ==========================================================
+# IMPORTACIÓN SEGURA Y RESILIENTE DE GOOGLE GEMINI (SDK DUAL)
+# ==========================================================
+genai_new = None
+genai_legacy = None
+
 try:
-  from google import genai
+  from google import genai as genai_new
 except ImportError:
-  genai = None
+  pass
+
+try:
+  import google.generativeai as genai_legacy
+except ImportError:
+  pass
 
 # ==========================================================
 # CONFIGURACIÓN Y TEMA VISUAL CLARO (ALTO CONTRASTE)
@@ -98,22 +108,6 @@ st.markdown(
         font-weight: bold;
         font-size: 0.85rem;
     }
-    /* Estilo para resaltar fila coincidente en la matriz */
-    .highlight-card {
-        background-color: #EFF6FF !important;
-        border: 2px solid #2563EB !important;
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 8px;
-    }
-    .normal-card {
-        background-color: #F8FAFC !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 8px;
-        opacity: 0.75;
-    }
 </style>
 """,
     unsafe_allow_html=True,
@@ -129,16 +123,23 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Inicialización limpia de la API de IA
+# Inicialización segura de la API Key
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
-client = None
-if api_key and genai is not None:
+client_new = None
+
+if api_key:
   api_key = str(api_key).strip().strip('"').strip("'")
   os.environ["GEMINI_API_KEY"] = api_key
-  try:
-    client = genai.Client(api_key=api_key)
-  except Exception as e:
-    st.sidebar.warning(f"Error cliente IA: {e}")
+  if genai_new is not None:
+    try:
+      client_new = genai_new.Client(api_key=api_key)
+    except Exception:
+      pass
+  if genai_legacy is not None:
+    try:
+      genai_legacy.configure(api_key=api_key)
+    except Exception:
+      pass
 
 # Sidebar Operativo
 with st.sidebar:
@@ -152,8 +153,8 @@ with st.sidebar:
       " Operations</h3>",
       unsafe_allow_html=True,
   )
-  if client:
-    st.success("🟢 Motor de IA: Conectado")
+  if api_key:
+    st.success("🟢 Motor de IA: Configurado")
   else:
     st.error("🔴 Motor de IA: Clave ausente en Secrets")
   st.markdown("---")
@@ -200,7 +201,7 @@ else:
   st.stop()
 
 # ==========================================================
-# CLASIFICACIÓN DE VECTORES ANALÍTICOS (6 VECTORES)
+# CLASIFICACIÓN DE VECTORES ANALÍTICOS (6 VECTORES TÉCNICOS)
 # ==========================================================
 
 
@@ -346,9 +347,9 @@ catalog_incidentes = {
         "matched_vectors": ["Fuerza Bruta & Credenciales"],
         "kill_chain": (
             "Ráfaga continua y secuencial de eventos EventID 4625 (Logon"
-            " Failure) originada desde múltiples IPs internas (10.10.1.x,"
-            " 10.10.2.x, 10.10.3.x) intentando autenticar sistemáticamente"
-            " contra cuentas corporativas clave en DC-01."
+            " Failure) originada desde múltiples IPs internas intentando"
+            " autenticar sistemáticamente contra cuentas corporativas clave en"
+            " DC-01."
         ),
         "filter": lambda d: d[
             (d["Hostname"].str.contains("DC", case=False, na=False))
@@ -460,7 +461,7 @@ df_incidente = inc_meta["filter"](df).copy().sort_values("Timestamp")
 if df_incidente.empty:
   df_incidente = df[df["Hostname"].isin(inc_meta["hosts"])].copy()
 
-# Cálculo dinámico de IPs, Hosts y Usuarios
+# Cálculo dinámico e íntegro de IPs, Hosts y Usuarios
 ips_atacantes_detectadas = [
     ip
     for ip in df_incidente["Source_IP"].dropna().unique()
@@ -488,7 +489,7 @@ str_usuarios = ", ".join(usuarios_implicados[:8])
 
 # Tarjeta de resumen visual
 with st.container():
-  c1, c2 = st.columns([3, 1])
+  c1, c2 = st.columns()
   with c1:
     st.markdown(f"#### 🔎 **{inc_meta['title']}**")
     st.markdown(
@@ -548,30 +549,29 @@ with st.expander(
   )
 
 # ==========================================================
-# EVALUACIÓN ASISTIDA POR IA (GUARDADO EN VARIABLE + POP-UP MODAL)
+# EVALUACIÓN ASISTIDA POR IA (ROBUSTA, SIN 404 Y CON MODAL)
 # ==========================================================
 st.markdown("#### 🤖 Evaluación Analítica con Inteligencia Artificial")
 
 
-# Modal interactivo (Pop-up en pantalla)
 @st.dialog(f"Dictamen Técnico SOC L2 - {selected_inc_key}", width="large")
 def modal_dictamen_ia(texto_ia, inc_titulo):
-  st.markdown(f"### 📋 Evaluación de Ciberseguridad: {inc_titulo}")
+  st.markdown(f"### 📋 Dictamen de Ciberseguridad: {inc_titulo}")
   st.markdown("---")
   st.markdown(texto_ia)
   st.markdown("---")
   st.caption(
-      "Dictamen generado y estructurado con el motor Gemini API bajo marco"
-      " MITRE ATT&CK / D3FEND."
+      "Dictamen emitido con Gemini API bajo marcos MITRE ATT&CK y MITRE"
+      " D3FEND."
   )
 
 
-col_btn_ia, col_enlace_ia = st.columns([1, 2])
+col_btn_ia, col_enlace_ia = st.columns()
 with col_btn_ia:
   ejecutar_ia = st.button(f"Ejecutar Análisis IA ({selected_inc_key})")
 
 if ejecutar_ia:
-  if not client:
+  if not api_key:
     st.error(
         "Clave 'GEMINI_API_KEY' no detectada. Configúrala en Settings > Secrets"
         " en Streamlit Cloud."
@@ -606,40 +606,75 @@ Genera un dictamen técnico profesional y conciso en Markdown:
 3. Nivel de Confianza (Confidence Level: Alto/Medio/Bajo con justificación basada en los logs).
 4. Contramedidas Defensivas Inmediatas (MITRE D3FEND aplicables a {selected_inc_key}).
 """
-      modelos_a_probar = [
-          "gemini-3.8-flash",
-          "gemini-2.0-flash",
-          "gemini-1.5-flash",
-      ]
       respuesta_obtenida = None
       ultimo_error = ""
 
-      for mod in modelos_a_probar:
-        for intento in range(2):
+      # 1. INTENTO CON EL NUEVO SDK (google.genai) DESCUBRIENDO MODELOS VÁLIDOS
+      if client_new is not None:
+        try:
+          modelos_disponibles = []
           try:
-            res = client.models.generate_content(model=mod, contents=prompt)
+            for m in client_new.models.list():
+              name = getattr(m, "name", str(m))
+              if "gemini" in name.lower():
+                modelos_disponibles.append(name.replace("models/", ""))
+          except Exception:
+            modelos_disponibles = [
+                "gemini-2.5-flash",
+                "gemini-2.0-flash",
+                "gemini-1.5-flash",
+            ]
+
+          if not modelos_disponibles:
+            modelos_disponibles = [
+                "gemini-2.5-flash",
+                "gemini-2.0-flash",
+                "gemini-1.5-flash",
+            ]
+
+          for mod in modelos_disponibles:
+            try:
+              res = client_new.models.generate_content(
+                  model=mod, contents=prompt
+              )
+              if res and hasattr(res, "text") and res.text:
+                respuesta_obtenida = res.text
+                st.session_state[f"ai_report_{selected_inc_key}"] = (
+                    respuesta_obtenida
+                )
+                st.session_state[f"ai_engine_{selected_inc_key}"] = mod
+                break
+            except Exception as e:
+              ultimo_error = str(e)
+              continue
+        except Exception as e:
+          ultimo_error = str(e)
+
+      # 2. INTENTO CON EL SDK LEGACY (google.generativeai) SI EL PRIMERO FALLÓ
+      if not respuesta_obtenida and genai_legacy is not None:
+        for mod_name in [
+            "gemini-1.5-flash-latest",
+            "gemini-1.5-pro-latest",
+            "gemini-pro",
+        ]:
+          try:
+            model = genai_legacy.GenerativeModel(mod_name)
+            res = model.generate_content(prompt)
             if res and hasattr(res, "text") and res.text:
               respuesta_obtenida = res.text
-              # Se guarda estrictamente en una variable de sesión
               st.session_state[f"ai_report_{selected_inc_key}"] = (
                   respuesta_obtenida
               )
-              st.session_state[f"ai_engine_{selected_inc_key}"] = mod
+              st.session_state[f"ai_engine_{selected_inc_key}"] = mod_name
               break
           except Exception as e:
             ultimo_error = str(e)
-            if "503" in ultimo_error or "high demand" in ultimo_error.lower():
-              time.sleep(2)
-              continue
-            else:
-              break
-        if respuesta_obtenida:
-          break
+            continue
 
       if not respuesta_obtenida:
         st.error(f"❌ Error al conectar con la API de Gemini: {ultimo_error}")
 
-# Enlace / Botón para consultar el Pop-Up (Modal) solo si el usuario desea abrirlo
+# Botón Modal para consultar el dictamen de IA únicamente si el usuario lo desea
 ai_text_actual = st.session_state.get(f"ai_report_{selected_inc_key}", "")
 engine_usado = st.session_state.get(f"ai_engine_{selected_inc_key}", "gemini")
 
@@ -739,128 +774,176 @@ with d_col2:
     st.plotly_chart(fig_vec, use_container_width=True)
 
 # ==========================================================
-# 4. CLASIFICACIÓN DE RIESGOS (CON VECTOR COINCIDENTE DESTACADO)
+# 4. MATRIZ DE CLASIFICACIÓN DE RIESGOS (TABLA EJECUTIVA CONSOLIDADA)
 # ==========================================================
 st.markdown("---")
 st.markdown(
     f"### ⚖️ 4. Matriz de Clasificación de Riesgos ({selected_inc_key})"
 )
 
-st.markdown(
-    f"**Nivel de Riesgo Global Asignado:** `{inc_meta['risk_level']}` |"
-    f" **Activos Víctima:** `{str_hosts_victimas}` | **IPs Atacantes:**"
-    f" `{str_ips_atacantes}`"
-)
-st.warning(f"**Directiva de Respuesta Operativa:** {inc_meta['action']}")
+# Banner Ejecutivo Resumido
+with st.container():
+  col_m1, col_m2 = st.columns()
+  with col_m1:
+    st.markdown(
+        f"**Nivel de Riesgo Global:** `{inc_meta['risk_level']}` &nbsp;|&nbsp;"
+        f" **Activos Víctima:** `{str_hosts_victimas}`"
+    )
+    st.markdown(
+        f"**Vectores Activos con Match:**"
+        f" `{', '.join(inc_meta['matched_vectors'])}`"
+    )
+  with col_m2:
+    st.markdown(
+        f"**Directiva Inmediata:** <span style='color: #DC2626;"
+        f" font-weight: bold;'>{inc_meta['action']}</span>",
+        unsafe_allow_html=True,
+    )
 
-st.markdown(
-    "#### **Evaluación Heurística de Vectores (Destacado del Incidente"
-    " Seleccionado):**"
-)
-
-# Lista canónica de los 6 vectores
-vectores_totales = [
+# Definición de la matriz técnica de los 6 vectores
+matriz_data = [
     {
-        "nombre": "Fuerza Bruta & Credenciales",
-        "mitre": "T1110 (Brute Force / Password Spraying)",
-        "desc": (
-            f"Fallas secuenciales EventID 4625 desde ({str_ips_atacantes}) hacia"
-            f" ({str_hosts_victimas}). Cuentas: ({str_usuarios})."
+        "Estado": (
+            "🔴 DETECTADO (MATCH)"
+            if "Fuerza Bruta & Credenciales" in inc_meta["matched_vectors"]
+            else "⚪ Línea Base / Monitoreado"
         ),
-        "accion": (
-            f"Bloquear IPs de origen ({str_ips_atacantes}) y forzar rotación de"
-            " contraseñas."
+        "Vector Analítico": "Fuerza Bruta & Credenciales",
+        "TTPs (MITRE ATT&CK)": "T1110 (Password Spraying / Guessing)",
+        "Evidencia Observada": (
+            f"Fallas 4625 secuenciales desde {str_ips_atacantes} contra"
+            f" {str_hosts_victimas}."
+            if "Fuerza Bruta & Credenciales" in inc_meta["matched_vectors"]
+            else "Intentos esporádicos dentro de los rangos habituales de red."
+        ),
+        "Contramedida Defensiva (MITRE D3FEND)": (
+            f"Bloqueo perimetral de IPs ({str_ips_atacantes}) y expiración de"
+            f" credenciales ({str_usuarios})."
         ),
     },
     {
-        "nombre": "Inicios de Sesión Sospechosos",
-        "mitre": "T1078 (Valid Accounts / RDP LogonType=10)",
-        "desc": (
-            "Inicios de sesión remotos interactivos o con cuentas de servicio"
-            f" en ({str_hosts_victimas})."
+        "Estado": (
+            "🔴 DETECTADO (MATCH)"
+            if "Inicios de Sesión Sospechosos" in inc_meta["matched_vectors"]
+            else "⚪ Línea Base / Monitoreado"
         ),
-        "accion": (
-            "Revocar tokens Kerberos/NTLM y aislar hosts para contención de"
-            " sesión."
+        "Vector Analítico": "Inicios de Sesión Sospechosos",
+        "TTPs (MITRE ATT&CK)": "T1078 (Valid Accounts / RDP LogonType=10)",
+        "Evidencia Observada": (
+            f"Sesión remota RDP interactiva o anómala en {str_hosts_victimas}."
+            if "Inicios de Sesión Sospechosos" in inc_meta["matched_vectors"]
+            else "Autenticaciones corporativas normales en horario de trabajo."
         ),
-    },
-    {
-        "nombre": "Escalamiento de Privilegios",
-        "mitre": "T1078 / T1069 (Permission Groups Discovery / EventID 4672)",
-        "desc": (
-            "Asignación anómala de privilegios de Administrador o invocación de"
-            " Get-LocalGroupMember."
-        ),
-        "accion": (
-            "Auditar asignaciones de grupos de dominio y revocar membresías"
-            " sospechosas."
-        ),
-    },
-    {
-        "nombre": "Comandos y Procesos (LOLBins)",
-        "mitre": (
-            "T1059 (Command and Scripting Interpreter - PowerShell ofuscado /"
-            " cmd.exe)"
-        ),
-        "desc": (
-            "Ejecución de PowerShell con flags -EncodedCommand, vssadmin delete"
-            " shadows o cmd.exe anómalo."
-        ),
-        "accion": (
-            "Terminar subprocesos hijos, bloquear hashes maliciosos y aislar"
+        "Contramedida Defensiva (MITRE D3FEND)": (
+            "Revocación de tokens Kerberos/NTLM y aislamiento temporal de"
             " endpoints."
         ),
     },
     {
-        "nombre": "Movimiento Lateral",
-        "mitre": "T1021.002 (SMB/Windows Admin Shares / EventID 5140/5145)",
-        "desc": (
-            "Navegación e interconexión interna hacia recursos compartidos en"
-            f" ({str_hosts_victimas})."
+        "Estado": (
+            "🔴 DETECTADO (MATCH)"
+            if "Escalamiento de Privilegios" in inc_meta["matched_vectors"]
+            else "⚪ Línea Base / Monitoreado"
         ),
-        "accion": (
-            "Segmentar VLANs, revocar accesos SMB compartidos y deshabilitar"
-            " NTLMv1."
+        "Vector Analítico": "Escalamiento de Privilegios",
+        "TTPs (MITRE ATT&CK)": (
+            "T1078 / T1069 (Permission Groups Discovery / EventID 4672)"
+        ),
+        "Evidencia Observada": (
+            "Asignación anómala de privilegios o ejecución de"
+            " Get-LocalGroupMember."
+            if "Escalamiento de Privilegios" in inc_meta["matched_vectors"]
+            else "Sin asignaciones de privilegios de Administrador sospechosas."
+        ),
+        "Contramedida Defensiva (MITRE D3FEND)": (
+            "Auditoría inmediata de grupos locales/dominio y revocar"
+            " membresías no autorizadas."
         ),
     },
     {
-        "nombre": "Otras Anomalías / Exfiltración",
-        "mitre": "T1048 (Exfiltration) / T1486 (Data Encrypted for Impact)",
-        "desc": (
-            "Staging con tar.exe, sockets salientes hacia IPs externas públicas"
-            " o destrucción masiva de backups."
+        "Estado": (
+            "🔴 DETECTADO (MATCH)"
+            if "Comandos y Procesos (LOLBins)" in inc_meta["matched_vectors"]
+            else "⚪ Línea Base / Monitoreado"
         ),
-        "accion": inc_meta["action"],
+        "Vector Analítico": "Comandos y Procesos (LOLBins)",
+        "TTPs (MITRE ATT&CK)": (
+            "T1059 (PowerShell -EncodedCommand / cmd.exe / vssadmin)"
+        ),
+        "Evidencia Observada": (
+            "Invocación de subprocesos sospechosos acordes a"
+            f" {inc_meta['mitre_technique']}."
+            if "Comandos y Procesos (LOLBins)" in inc_meta["matched_vectors"]
+            else "Comandos y binarios legítimos de administración del sistema."
+        ),
+        "Contramedida Defensiva (MITRE D3FEND)": (
+            "Terminación de árboles de procesos, bloqueo de hash en EDR y"
+            " sandbox."
+        ),
+    },
+    {
+        "Estado": (
+            "🔴 DETECTADO (MATCH)"
+            if "Movimiento Lateral" in inc_meta["matched_vectors"]
+            else "⚪ Línea Base / Monitoreado"
+        ),
+        "Vector Analítico": "Movimiento Lateral",
+        "TTPs (MITRE ATT&CK)": (
+            "T1021.002 (SMB/Windows Admin Shares / EventID 5140/5145)"
+        ),
+        "Evidencia Observada": (
+            f"Navegación e interconexión interna hacia carpetas compartidas en"
+            f" {str_hosts_victimas}."
+            if "Movimiento Lateral" in inc_meta["matched_vectors"]
+            else "Tráfico SMB habitual sin accesos anómalos a shares críticos."
+        ),
+        "Contramedida Defensiva (MITRE D3FEND)": (
+            "Segmentar VLANs, revocar accesos de red y restringir puertos"
+            " 445/139."
+        ),
+    },
+    {
+        "Estado": (
+            "🔴 DETECTADO (MATCH)"
+            if "Otras Anomalías / Exfiltración" in inc_meta["matched_vectors"]
+            else "⚪ Línea Base / Monitoreado"
+        ),
+        "Vector Analítico": "Otras Anomalías / Exfiltración",
+        "TTPs (MITRE ATT&CK)": (
+            "T1048 (Exfiltration) / T1486 (Data Encrypted for Impact) / T1190"
+        ),
+        "Evidencia Observada": (
+            f"Staging con tar.exe, conexiones salientes a IPs públicas o"
+            f" destrucción de VSS."
+            if "Otras Anomalías / Exfiltración" in inc_meta["matched_vectors"]
+            else "Flujo normal de salida perimetral sin fugas detectadas."
+        ),
+        "Contramedida Defensiva (MITRE D3FEND)": inc_meta["action"],
     },
 ]
 
-# Despliegue visual destacando claramente el/los vectores que hacen MATCH con el incidente
-for v in vectores_totales:
-  es_match = v["nombre"] in inc_meta["matched_vectors"]
-  if es_match:
-    st.markdown(
-        f"""
-            <div class='highlight-card'>
-                <span style='background-color: #2563EB; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;'>🎯 VECTOR COINCIDENTE (MATCH ACTIVO)</span>
-                <h4 style='color: #1E40AF; margin-top: 6px; margin-bottom: 4px;'>{v['nombre']}</h4>
-                <b>TTPs Asociadas:</b> {v['mitre']}<br/>
-                <b>Evidencia Detectada:</b> {v['desc']}<br/>
-                <b>Acción Inmediata:</b> <span style='color: #DC2626; font-weight: bold;'>{v['accion']}</span>
-            </div>
-            """,
-        unsafe_allow_html=True,
-    )
-  else:
-    st.markdown(
-        f"""
-            <div class='normal-card'>
-                <span style='background-color: #64748B; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;'>Línea Base / No prioritario para {selected_inc_key}</span>
-                <h5 style='color: #475569; margin-top: 6px; margin-bottom: 2px;'>{v['nombre']}</h5>
-                <small style='color: #64748B;'>TTP: {v['mitre']} | Estado: Monitoreado sin anomalía primaria.</small>
-            </div>
-            """,
-        unsafe_allow_html=True,
-    )
+# Despliegue de la Matriz en Tabla Ejecutiva de Alta Densidad
+df_matriz_ejecutiva = pd.DataFrame(matriz_data)
+st.dataframe(
+    df_matriz_ejecutiva,
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        "Estado": st.column_config.TextColumn("Estado del Vector", width=190),
+        "Vector Analítico": st.column_config.TextColumn(
+            "Categoría Heurística", width=210
+        ),
+        "TTPs (MITRE ATT&CK)": st.column_config.TextColumn(
+            "TTPs Asociadas", width=220
+        ),
+        "Evidencia Observada": st.column_config.TextColumn(
+            "Evidencia Empírica en Telemetría", width=340
+        ),
+        "Contramedida Defensiva (MITRE D3FEND)": st.column_config.TextColumn(
+            "Respuesta Operativa Recomendada", width=340
+        ),
+    },
+)
 
 # ==========================================================
 # 5. INFORME TÉCNICO DE INCIDENTE (INTEGRIDAD TOTAL)
