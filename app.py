@@ -29,7 +29,7 @@ except ImportError:
 # CONFIGURACIÓN Y TEMA VISUAL CLARO (ALTO CONTRASTE)
 # ==========================================================
 st.set_page_config(
-    page_title="SOC L2 - JRBL - Plataforma de Defensa",
+    page_title="SOC L2 - JRBL - Plataforma de Defensa 🇨🇱",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -114,7 +114,8 @@ st.markdown(
 )
 
 st.markdown(
-    "<div class='main-title'>🛡️ SOC L2 - JRBL - Plataforma de Defensa</div>",
+    "<div class='main-title'>🛡️ SOC L2 - JRBL - Plataforma de Defensa"
+    " 🇨🇱</div>",
     unsafe_allow_html=True,
 )
 st.markdown(
@@ -123,7 +124,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Inicialización de la API Key
+# Inicialización segura de la API Key
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 client_new = None
 
@@ -145,12 +146,12 @@ if api_key:
 with st.sidebar:
   st.markdown(
       "<div style='text-align: center; font-size: 2.8rem; margin-bottom:"
-      " 0.3rem;'>🛡️</div>",
+      " 0.3rem;'>🛡️ 🇨🇱</div>",
       unsafe_allow_html=True,
   )
   st.markdown(
-      "<h3 style='text-align: center; color: #1E40AF; margin-top: 0;'>Security"
-      " Operations</h3>",
+      "<h3 style='text-align: center; color: #1E40AF; margin-top: 0;'>SOC L2 -"
+      " JRBL</h3>",
       unsafe_allow_html=True,
   )
   if api_key:
@@ -168,7 +169,7 @@ with st.sidebar:
 # ==========================================================
 # 1. CARGA DE ARCHIVOS
 # ==========================================================
-st.markdown("### 📥 1. Carga de archivos (Security Event Logs)")
+st.markdown("### 📥 1. Ingesta de Telemetría (Security Event Logs)")
 uploaded_file = st.file_uploader(
     "Cargar dataset consolidado de seguridad (.CSV)",
     type=["csv", "txt", "log"],
@@ -259,7 +260,7 @@ df["Vector_Analitico"] = df.apply(clasificar_vector, axis=1)
 # 2. SELECTOR DE INCIDENTES Y CORRELACIÓN DE KILL CHAIN
 # ==========================================================
 st.markdown("---")
-st.markdown("### 🎯 2. Anális de Seguridad")
+st.markdown("### 🎯 2. Selector Maestro de Incidentes Correlacionados")
 
 catalog_incidentes = {
     "INC-ALL": {
@@ -487,7 +488,7 @@ usuarios_implicados = [
 ]
 str_usuarios = ", ".join(usuarios_implicados[:8])
 
-# Tarjeta de resumen visual (st.columns(2) especificado)
+# Tarjeta de resumen visual
 with st.container():
   c1, c2 = st.columns(2)
   with c1:
@@ -781,7 +782,7 @@ st.markdown(
     f"### ⚖️ 4. Matriz de Clasificación de Riesgos ({selected_inc_key})"
 )
 
-# Banner Ejecutivo Resumido (st.columns(2) especificado)
+# Banner Ejecutivo Resumido
 with st.container():
   col_m1, col_m2 = st.columns(2)
   with col_m1:
@@ -950,7 +951,7 @@ st.dataframe(
 # ==========================================================
 st.markdown("---")
 st.markdown(
-    f"### 📝 5. Informe Técnico: **{selected_inc_key}**"
+    f"### 📝 5. Informe Técnico de Incidente: **{selected_inc_key}**"
 )
 
 if ai_text_actual:
