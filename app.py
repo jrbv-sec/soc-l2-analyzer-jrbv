@@ -60,9 +60,9 @@ else:
   st.stop()
 
 # ==========================================================
-# 2. DETECCIÓN Y CORRELACIÓN DE AMENAZAS
+# 2. ANÁLISIS DE SEGURIDAD (DETECCIÓN Y CORRELACIÓN DE AMENAZAS)
 # ==========================================================
-st.header("2. Detección y Correlación de Cadenas de Ataque")
+st.header("2. Análisis de Seguridad - Detección y Correlación de Cadenas de Ataque")
 
 # Identificación de eventos críticos / sospechosos
 #suspicious_mask = (
@@ -464,7 +464,7 @@ incident_analyst = st.text_input(
 )
 
 # ==========================================================
-# 6. EXPORTACIÓN EN PDF
+# 6. EXPORTACIÓN DE INFORME
 # ==========================================================
 st.header("6. Exportar Informe Técnico a PDF")
 
