@@ -1,4 +1,3 @@
-```python
 import io
 import os
 import time
@@ -30,7 +29,7 @@ except ImportError:
 # CONFIGURACIÓN Y TEMA VISUAL CLARO (ALTO CONTRASTE)
 # ==========================================================
 st.set_page_config(
-    page_title="SOC L2 - JRBL - Plataforma de Defensa 🇨🇱",
+    page_title="SOC L2 - JRBL - Plataforma de Defensa",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -258,7 +257,7 @@ def clasificar_vector(row):
 df["Vector_Analitico"] = df.apply(clasificar_vector, axis=1)
 
 # ==========================================================
-# 2. SELECTOR DE INCIDENTES Y CORRELACIÓN DE KILL CHAIN
+# 2. ANÁLISIS DE SEGURIDAD - SELECTOR DE INCIDENTES Y CORRELACIÓN DE KILL CHAIN
 # ==========================================================
 st.markdown("---")
 st.markdown("### 🎯 2. Selector Maestro de Incidentes Correlacionados")
@@ -938,7 +937,7 @@ st.dataframe(
 # ==========================================================
 st.markdown("---")
 st.markdown(
-    f"### 📝 5. Informe Técnico de Incidente: **{selected_inc_key}**"
+    f"### 📝 5. Informe Técnico: **{selected_inc_key}**"
 )
 
 if ai_text_actual:
