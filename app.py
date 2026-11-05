@@ -29,7 +29,7 @@ except ImportError:
 # CONFIGURACIÓN Y TEMA VISUAL CLARO (ALTO CONTRASTE)
 # ==========================================================
 st.set_page_config(
-    page_title="SOC L2 Defense Workbench",
+    page_title="SOC L2 - JRBL - Plataforma de Defensa",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -168,7 +168,7 @@ with st.sidebar:
 # ==========================================================
 # 1. CARGA DE ARCHIVOS
 # ==========================================================
-st.markdown("### 📥 1. Ingesta de Telemetría (Security Event Logs)")
+st.markdown("### 📥 1. Carga de archivos (Security Event Logs)")
 uploaded_file = st.file_uploader(
     "Cargar dataset consolidado de seguridad (.CSV)",
     type=["csv", "txt", "log"],
@@ -259,7 +259,7 @@ df["Vector_Analitico"] = df.apply(clasificar_vector, axis=1)
 # 2. SELECTOR DE INCIDENTES Y CORRELACIÓN DE KILL CHAIN
 # ==========================================================
 st.markdown("---")
-st.markdown("### 🎯 2. Selector Maestro de Incidentes Correlacionados")
+st.markdown("### 🎯 2. Anális de Seguridad")
 
 catalog_incidentes = {
     "INC-ALL": {
@@ -950,7 +950,7 @@ st.dataframe(
 # ==========================================================
 st.markdown("---")
 st.markdown(
-    f"### 📝 5. Informe Técnico de Incidente: **{selected_inc_key}**"
+    f"### 📝 5. Informe Técnico: **{selected_inc_key}**"
 )
 
 if ai_text_actual:
