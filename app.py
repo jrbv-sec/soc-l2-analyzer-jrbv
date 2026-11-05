@@ -220,7 +220,8 @@ if st.button("Ejecutar Análisis y Evaluación Técnica con IA"):
             """
       try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash", contents=prompt
+            # model="gemini-2.5-flash", contents=prompt
+            model="gemini-3.8-flash", contents=prompt
         )
         st.session_state["ai_analysis"] = response.text
         st.success("Análisis técnico completado.")
