@@ -3,11 +3,11 @@ import os
 import time
 import pandas as pd
 import plotly.express as px
+import streamlit as st
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
-import streamlit as st
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
 # ==========================================================
 # IMPORTACIÓN SEGURA Y RESILIENTE DE GOOGLE GEMINI (SDK DUAL)
@@ -29,97 +29,35 @@ except ImportError:
 # CONFIGURACIÓN Y TEMA VISUAL CLARO (ALTO CONTRASTE)
 # ==========================================================
 st.set_page_config(
-    page_title="SOC L2 - JRBL - Plataforma de Defensa",
+    page_title="SOC L2 - JRBL - Plataforma de Defensa 🇨🇱",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 st.markdown(
-    """
-<style>
-    .stApp {
-        background-color: #F8FAFC;
-        color: #0F172A;
-    }
-    .main-title {
-        font-size: 2.2rem;
-        font-weight: 800;
-        color: #0F172A;
-        margin-bottom: 0.2rem;
-    }
-    .sub-title {
-        font-size: 1.05rem;
-        color: #475569;
-        margin-bottom: 1.5rem;
-    }
-    div[data-testid="stMetric"] {
-        background-color: #FFFFFF;
-        border: 1px solid #CBD5E1;
-        padding: 16px;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
-    div[data-testid="stMetricLabel"] {
-        color: #475569 !important;
-        font-weight: 700;
-    }
-    div[data-testid="stMetricValue"] {
-        color: #1E40AF !important;
-        font-family: monospace;
-        font-size: 1.9rem;
-    }
-    div[data-testid="stVerticalBlock"] > div[data-testid="stContainer"] {
-        background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 10px;
-        padding: 18px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .badge-critical {
-        background-color: #DC2626;
-        color: #FFFFFF;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-weight: bold;
-        font-size: 0.85rem;
-    }
-    .badge-high {
-        background-color: #EA580C;
-        color: #FFFFFF;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-weight: bold;
-        font-size: 0.85rem;
-    }
-    .badge-medium {
-        background-color: #D97706;
-        color: #FFFFFF;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-weight: bold;
-        font-size: 0.85rem;
-    }
-    .badge-all {
-        background-color: #4F46E5;
-        color: #FFFFFF;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-weight: bold;
-        font-size: 0.85rem;
-    }
-</style>
-""",
+    """<style>
+    .stApp { background-color: #F8FAFC; color: #0F172A; }
+    .main-title { font-size: 2.2rem; font-weight: 800; color: #0F172A; margin-bottom: 0.2rem; }
+    .sub-title { font-size: 1.05rem; color: #475569; margin-bottom: 1.5rem; }
+    div[data-testid="stMetric"] { background-color: #FFFFFF; border: 1px solid #CBD5E1; padding: 16px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); }
+    div[data-testid="stMetricLabel"] { color: #475569 !important; font-weight: 700; }
+    div[data-testid="stMetricValue"] { color: #1E40AF !important; font-family: monospace; font-size: 1.9rem; }
+    div[data-testid="stVerticalBlock"] > div[data-testid="stContainer"] { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .badge-critical { background-color: #DC2626; color: #FFFFFF; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; }
+    .badge-high { background-color: #EA580C; color: #FFFFFF; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; }
+    .badge-all { background-color: #4F46E5; color: #FFFFFF; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; }
+</style>""",
     unsafe_allow_html=True,
 )
 
+# Título y subtítulo en cadenas lineales seguras
 st.markdown(
-    "<div class='main-title'>🛡️ SOC L2 - JRBL - Plataforma de Defensa"
+    "<div class='main-title'>🛡️ SOC L2 - JRBL - Plataforma de Defensa 🇨🇱</div>",
     unsafe_allow_html=True,
 )
 st.markdown(
-    "<div class='sub-title'>Plataforma Unificada de Operaciones de Seguridad:"
-    " Triage Heurístico, Correlación de Kill Chain y Análisis con IA.</div>",
+    "<div class='sub-title'>Plataforma Unificada de Operaciones de Seguridad: Triage Heurístico, Correlación de Kill Chain y Análisis con IA.</div>",
     unsafe_allow_html=True,
 )
 
@@ -144,13 +82,11 @@ if api_key:
 # Sidebar Operativo
 with st.sidebar:
   st.markdown(
-      "<div style='text-align: center; font-size: 2.8rem; margin-bottom:"
-      " 0.3rem;'>🛡️ 🇨🇱</div>",
+      "<div style='text-align: center; font-size: 2.8rem; margin-bottom: 0.3rem;'>🛡️ 🇨🇱</div>",
       unsafe_allow_html=True,
   )
   st.markdown(
-      "<h3 style='text-align: center; color: #1E40AF; margin-top: 0;'>SOC L2 -"
-      " JRBL</h3>",
+      "<h3 style='text-align: center; color: #1E40AF; margin-top: 0;'>SOC L2 - JRBL</h3>",
       unsafe_allow_html=True,
   )
   if api_key:
@@ -262,15 +198,12 @@ df["Vector_Analitico"] = df.apply(clasificar_vector, axis=1)
 # ==========================================================
 st.markdown("---")
 st.markdown(
-    "### 🎯 02 - Análisis de seguridad | Selector de Incidentes y Correlación"
-    " de Kill Chain"
+    "### 🎯 02 - Análisis de seguridad | Selector de Incidentes y Correlación de Kill Chain"
 )
 
 catalog_incidentes = {
     "INC-ALL": {
-        "title": (
-            "Todos los Incidentes Consolidados (Vista Global del Entorno)"
-        ),
+        "title": "Todos los Incidentes Consolidados (Vista Global del Entorno)",
         "badge": "VISTA GLOBAL",
         "hosts": sorted(list(df["Hostname"].dropna().unique())),
         "matched_vectors": [
@@ -344,9 +277,7 @@ catalog_incidentes = {
         ),
     },
     "INC-02": {
-        "title": (
-            "INC-02: Fuerza Bruta / Password Spraying en Directorio Activo"
-        ),
+        "title": "INC-02: Fuerza Bruta / Password Spraying en Directorio Activo",
         "badge": "ALTO",
         "hosts": ["DC-01", "DC01"],
         "matched_vectors": ["Fuerza Bruta & Credenciales"],
@@ -450,8 +381,7 @@ catalog_incidentes = {
 }
 
 selected_inc_key = st.selectbox(
-    "👉 **Selecciona el Incidente de Seguridad que deseas investigar y"
-    " correlacionar:**",
+    "👉 **Selecciona el Incidente de Seguridad que deseas investigar y correlacionar:**",
     options=list(catalog_incidentes.keys()),
     format_func=lambda k: (
         f"[{catalog_incidentes[k]['badge']}] {catalog_incidentes[k]['title']}"
@@ -700,11 +630,13 @@ La telemetría correlacionada confirma un compromiso activo sobre los activos `{
 - **Acción Operativa:** {inc_meta['action']}
 """
       st.session_state[f"ai_report_{selected_inc_key}"] = respuesta_obtenida
-      st.session_state[f"ai_engine_{selected_inc_key}"] = "Motor Heurístico SOC L2"
+      st.session_state[f"ai_engine_{selected_inc_key}"] = (
+          "Motor Heurístico SOC L2"
+      )
 
     st.success(f"✅ Dictamen generado con éxito para {selected_inc_key}.")
 
-# Botón Modal para consultar el dictamen de IA únicamente si el usuario lo desea
+# Botón Modal para consultar el dictamen de IA
 ai_text_actual = st.session_state.get(f"ai_report_{selected_inc_key}", "")
 engine_usado = st.session_state.get(f"ai_engine_{selected_inc_key}", "gemini")
 
@@ -725,8 +657,7 @@ with col_enlace_ia:
 # ==========================================================
 st.markdown("---")
 st.markdown(
-    f"### 📊 03 - Dashboard | Visualización Dinámica de Métricas y Severidad"
-    f" ({selected_inc_key})"
+    f"### 📊 03 - Dashboard | Visualización Dinámica de Métricas y Severidad ({selected_inc_key})"
 )
 
 with st.container():
@@ -982,8 +913,7 @@ st.dataframe(
 # ==========================================================
 st.markdown("---")
 st.markdown(
-    "### 📝 05 - Informe técnico | Síntesis Forense y Dictamen Asistido"
-    f" ({selected_inc_key})"
+    f"### 📝 05 - Informe técnico | Síntesis Forense y Dictamen Asistido ({selected_inc_key})"
 )
 
 if ai_text_actual:
