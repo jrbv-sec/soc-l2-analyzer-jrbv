@@ -1,3 +1,4 @@
+```python
 import io
 import os
 import time
@@ -169,7 +170,7 @@ with st.sidebar:
 # ==========================================================
 # 1. CARGA DE ARCHIVOS
 # ==========================================================
-st.markdown("### 📥 1. Carga de archivos (Security Event Logs)")
+st.markdown("### 📥 1. Ingesta de Telemetría (Security Event Logs)")
 uploaded_file = st.file_uploader(
     "Cargar dataset consolidado de seguridad (.CSV)",
     type=["csv", "txt", "log"],
@@ -260,7 +261,7 @@ df["Vector_Analitico"] = df.apply(clasificar_vector, axis=1)
 # 2. SELECTOR DE INCIDENTES Y CORRELACIÓN DE KILL CHAIN
 # ==========================================================
 st.markdown("---")
-st.markdown("### 🎯 2. Análisis de Seguridad")
+st.markdown("### 🎯 2. Selector Maestro de Incidentes Correlacionados")
 
 catalog_incidentes = {
     "INC-ALL": {
@@ -550,7 +551,7 @@ with st.expander(
   )
 
 # ==========================================================
-# EVALUACIÓN ASISTIDA POR IA (ROBUSTA, SIN 404 Y CON MODAL)
+# EVALUACIÓN ASISTIDA POR IA (OPTIMIZADA, RÁPIDA Y SIN TIMEOUTS)
 # ==========================================================
 st.markdown("#### 🤖 Evaluación Analítica con Inteligencia Artificial")
 
@@ -589,11 +590,11 @@ if ejecutar_ia:
           "Process_CommandLine",
       ]
       muestra_logs = (
-          df_incidente[cols_forenses].head(12).to_csv(index=False, sep="|")
+          df_incidente[cols_forenses].head(8).to_csv(index=False, sep="|")
       )
 
       prompt = f"""
-Eres un Analista SOC L2 Senior. Analiza el siguiente incidente de seguridad: {inc_meta['title']}.
+Eres un Analista SOC L2 Senior. Analiza el incidente: {inc_meta['title']}.
 - Actores atacantes (IPs): {str_ips_atacantes}
 - Activos víctima: {str_hosts_victimas}
 - Cuentas involucradas: {str_usuarios}
@@ -601,63 +602,47 @@ Eres un Analista SOC L2 Senior. Analiza el siguiente incidente de seguridad: {in
 Muestra de telemetría forense (CSV delimitado por |):
 {muestra_logs}
 
-Genera un dictamen técnico profesional y conciso en Markdown:
-1. Hipótesis del Incidente y Vector Inicial (Causalidad temporal específica de {selected_inc_key}).
-2. Mapeo de TTPs (MITRE ATT&CK identificados en este conjunto de eventos).
-3. Nivel de Confianza (Confidence Level: Alto/Medio/Bajo con justificación basada en los logs).
-4. Contramedidas Defensivas Inmediatas (MITRE D3FEND aplicables a {selected_inc_key}).
+Genera un dictamen técnico profesional, directo y conciso en Markdown:
+1. Hipótesis del Incidente y Vector Inicial de {selected_inc_key}.
+2. Mapeo de TTPs según MITRE ATT&CK.
+3. Nivel de Confianza (Alto/Medio/Bajo con justificación).
+4. Contramedidas Defensivas Inmediatas según MITRE D3FEND.
 """
       respuesta_obtenida = None
       ultimo_error = ""
 
-      # 1. INTENTO CON EL NUEVO SDK (google.genai) DESCUBRIENDO MODELOS VÁLIDOS
+      # Si ya tenemos un modelo funcional recordado en la sesión, lo usamos primero
+      modelo_preferido = st.session_state.get(
+          "gemini_working_model", "gemini-2.5-flash"
+      )
+      modelos_a_probar = [
+          modelo_preferido,
+          "gemini-2.0-flash",
+          "gemini-1.5-flash",
+      ]
+      # Eliminamos duplicados conservando el orden de prioridad
+      modelos_a_probar = list(dict.fromkeys(modelos_a_probar))
+
+      # 1. INTENTO CON EL SDK MODERNO (google.genai)
       if client_new is not None:
-        try:
-          modelos_disponibles = []
+        for mod in modelos_a_probar:
           try:
-            for m in client_new.models.list():
-              name = getattr(m, "name", str(m))
-              if "gemini" in name.lower():
-                modelos_disponibles.append(name.replace("models/", ""))
-          except Exception:
-            modelos_disponibles = [
-                "gemini-2.5-flash",
-                "gemini-2.0-flash",
-                "gemini-1.5-flash",
-            ]
-
-          if not modelos_disponibles:
-            modelos_disponibles = [
-                "gemini-2.5-flash",
-                "gemini-2.0-flash",
-                "gemini-1.5-flash",
-            ]
-
-          for mod in modelos_disponibles:
-            try:
-              res = client_new.models.generate_content(
-                  model=mod, contents=prompt
+            res = client_new.models.generate_content(model=mod, contents=prompt)
+            if res and hasattr(res, "text") and res.text:
+              respuesta_obtenida = res.text
+              st.session_state["gemini_working_model"] = mod
+              st.session_state[f"ai_report_{selected_inc_key}"] = (
+                  respuesta_obtenida
               )
-              if res and hasattr(res, "text") and res.text:
-                respuesta_obtenida = res.text
-                st.session_state[f"ai_report_{selected_inc_key}"] = (
-                    respuesta_obtenida
-                )
-                st.session_state[f"ai_engine_{selected_inc_key}"] = mod
-                break
-            except Exception as e:
-              ultimo_error = str(e)
-              continue
-        except Exception as e:
-          ultimo_error = str(e)
+              st.session_state[f"ai_engine_{selected_inc_key}"] = mod
+              break
+          except Exception as e:
+            ultimo_error = str(e)
+            continue
 
-      # 2. INTENTO CON EL SDK LEGACY (google.generativeai) SI EL PRIMERO FALLÓ
+      # 2. INTENTO CON EL SDK CLÁSICO (google.generativeai) SI FALLÓ EL ANTERIOR
       if not respuesta_obtenida and genai_legacy is not None:
-        for mod_name in [
-            "gemini-1.5-flash-latest",
-            "gemini-1.5-pro-latest",
-            "gemini-pro",
-        ]:
+        for mod_name in ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]:
           try:
             model = genai_legacy.GenerativeModel(mod_name)
             res = model.generate_content(prompt)
@@ -672,7 +657,9 @@ Genera un dictamen técnico profesional y conciso en Markdown:
             ultimo_error = str(e)
             continue
 
-      if not respuesta_obtenida:
+      if respuesta_obtenida:
+        st.success(f"✅ Análisis completado con éxito para {selected_inc_key}.")
+      else:
         st.error(f"❌ Error al conectar con la API de Gemini: {ultimo_error}")
 
 # Botón Modal para consultar el dictamen de IA únicamente si el usuario lo desea
