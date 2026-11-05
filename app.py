@@ -29,7 +29,7 @@ except ImportError:
 # CONFIGURACIÓN Y TEMA VISUAL CLARO (ALTO CONTRASTE)
 # ==========================================================
 st.set_page_config(
-    page_title="SOC L2 - JRBL - Plataforma de Defensa 🇨🇱",
+    page_title="SOC L2 - JRBL - Plataforma de Defensa",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
