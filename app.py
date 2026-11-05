@@ -218,15 +218,29 @@ if st.button("Ejecutar Análisis y Evaluación Técnica con IA"):
             3. Evaluación de Confianza (Confidence Level: Alto, Medio o Bajo) justificando la solidez de la evidencia.
             4. Contramedidas defensivas inmediatas basadas en el marco MITRE D3FEND.
             """
-      try:
-        response = client.models.generate_content(
-            # model="gemini-2.5-flash", contents=prompt
-            model="gemini-3.8-flash", contents=prompt
-        )
-        st.session_state["ai_analysis"] = response.text
-        st.success("Análisis técnico completado.")
-      except Exception as err:
-        st.error(f"Error al consultar la IA: {err}")
+      modelos_candidatos = [
+          "gemini-2.0-flash",
+          "gemini-1.5-flash",
+          "gemini-2.5-flash",
+          "gemini-3.8-flash"
+      ]
+      analisis_generado = None
+
+      for mod in modelos_candidatos:
+        try:
+          response = client.models.generate_content(
+              model=mod,
+              contents=prompt
+          )
+          analisis_generado = response.text
+          st.session_state["ai_analysis"] = analisis_generado
+          st.success(f"Análisis técnico completado exitosamente (utilizando el motor {mod}).")
+          break
+        except Exception as err:
+          continue
+
+      if not analisis_generado:
+        st.error("Los servidores de IA están con alta demanda en este momento (503). Por favor intenta de nuevo en unos segundos.")
 
 if "ai_analysis" in st.session_state:
   st.markdown(st.session_state["ai_analysis"])
