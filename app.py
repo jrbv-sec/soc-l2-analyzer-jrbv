@@ -411,19 +411,53 @@ st.dataframe(risk_table_df, use_container_width=True)
 # ==========================================================
 st.header("5. Informe Técnico de Incidente")
 
-default_summary = (
-    "Durante el análisis de telemetría se confirmó una intrusión dirigida"
-    " clasificada como RIESGO CRÍTICO. El atacante logró acceso RDP no"
-    " autorizado hacia APP-SRV01, ejecutó payloads ofuscados en PowerShell para"
-    " reconocimiento interno, se desplazó lateralmente hacia el servidor de"
-    " archivos FS-SRV01 accediendo al recurso confidencial Finance, y preparó"
-    " la exfiltración mediante compresión de archivos y conexión saliente a la"
-    " IP 203.0.113.88:443. Se requiere contención inmediata y activación de"
-    " DFIR."
-)
+# Construcción dinámica del resumen según la selección del usuario
+if "ai_analysis" in st.session_state and st.session_state["ai_analysis"]:
+  # Si la IA ya analizó los logs, extraemos las primeras líneas como síntesis
+  lineas_ai = [
+      l.strip()
+      for l in st.session_state["ai_analysis"].split("\n")
+      if l.strip() and not l.startswith("#")
+  ]
+  sintesis_base = (
+      " ".join(lineas_ai[:3])
+      if lineas_ai
+      else "Análisis técnico completado por el motor de IA."
+  )
+  dynamic_summary = (
+      f"Evaluación técnica SOC L2 (Nivel de Riesgo: {risk_level}):"
+      f" {sintesis_base}"
+  )
+elif selected_host != "Todos":
+  # Si el analista está haciendo drill-down en un host puntual en el Dashboard
+  total_host_alerts = len(
+      df[(df["Hostname"] == selected_host) & (df["Severity"].isin(["High", "Warning"]))]
+  )
+  dynamic_summary = (
+      f"Investigación focalizada sobre el activo {selected_host}. Durante la"
+      f" ventana de telemetría se identificaron {total_host_alerts} alertas"
+      f" críticas/warning asociadas a este equipo, con un nivel de riesgo"
+      f" evaluado como {risk_level}. Se recomienda aplicar contención sobre el"
+      " host e investigar credenciales comprometidas."
+  )
+else:
+  # Resumen contextual según el incidente correlacionado seleccionado en el punto 2
+  dynamic_summary = (
+      f"Informe de Triage SOC Nivel 2 - Incidente Seleccionado:"
+      f" {selected_incident.split(':')[0]}. Se evaluaron {len(df)} eventos"
+      f" totales registrando un riesgo global {risk_level}. La telemetría"
+      " evidencia actividad anómala que requiere validación de TTPs y ejecución"
+      " de acciones defensivas inmediatas."
+  )
 
 executive_summary = st.text_area(
-    "Resumen Ejecutivo del Analista:", value=default_summary, height=120
+    "Resumen Ejecutivo del Analista (Editable):",
+    value=dynamic_summary,
+    height=130,
+    help=(
+        "Este texto se autocalcula según el incidente seleccionado, el host del"
+        " dashboard o el análisis de la IA, y puedes editarlo libremente."
+    ),
 )
 incident_analyst = st.text_input(
     "Analista a cargo:", value="Analista SOC Nivel 2"
