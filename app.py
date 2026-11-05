@@ -90,6 +90,30 @@ st.markdown(
         font-weight: bold;
         font-size: 0.85rem;
     }
+    .badge-all {
+        background-color: #4F46E5;
+        color: #FFFFFF;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: bold;
+        font-size: 0.85rem;
+    }
+    /* Estilo para resaltar fila coincidente en la matriz */
+    .highlight-card {
+        background-color: #EFF6FF !important;
+        border: 2px solid #2563EB !important;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 8px;
+    }
+    .normal-card {
+        background-color: #F8FAFC !important;
+        border: 1px solid #E2E8F0 !important;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 8px;
+        opacity: 0.75;
+    }
 </style>
 """,
     unsafe_allow_html=True,
@@ -186,7 +210,7 @@ def clasificar_vector(row):
   eid = row["Event_ID"]
 
   if eid == "4625" or "failed to log on" in desc:
-    return "Fuerza Bruta (Logon Failure)"
+    return "Fuerza Bruta & Credenciales"
   if "logontype=10" in desc or (
       eid == "4624"
       and (
@@ -194,13 +218,13 @@ def clasificar_vector(row):
           or row["User"] in ["CORP\\admin", "CORP\\backupsvc"]
       )
   ):
-    return "Inicio de Sesión Sospechoso (RDP / Anómalo)"
+    return "Inicios de Sesión Sospechosos"
   if (
       eid == "4672"
       or "special privileges" in desc
       or "get-localgroupmember" in cmd
   ):
-    return "Escalamiento / Abuso de Privilegios"
+    return "Escalamiento de Privilegios"
   if any(
       k in cmd
       for k in [
@@ -211,19 +235,19 @@ def clasificar_vector(row):
           "cmd.exe /c",
       ]
   ):
-    return "Comandos y Procesos Sospechosos (LOLBins)"
+    return "Comandos y Procesos (LOLBins)"
   if (
       eid in ["5140", "5145"]
       or "logontype=3" in desc
       or "\\\\fs-srv01" in row["Destination"].lower()
   ):
-    return "Movimiento Lateral (SMB / Shares)"
+    return "Movimiento Lateral"
   if (
       "tar.exe" in cmd
       or "203.0.113.88" in row["Destination"]
       or any(k in cmd for k in ["/admin/", "/api/v1/export"])
   ):
-    return "Otras Anomalías (Exfiltración / Web Fuzzing)"
+    return "Otras Anomalías / Exfiltración"
 
   return "Actividad Normal / Línea Base"
 
@@ -237,6 +261,41 @@ st.markdown("---")
 st.markdown("### 🎯 2. Selector Maestro de Incidentes Correlacionados")
 
 catalog_incidentes = {
+    "INC-ALL": {
+        "title": (
+            "Todos los Incidentes Consolidados (Vista Global del Entorno)"
+        ),
+        "badge": "VISTA GLOBAL",
+        "hosts": sorted(list(df["Hostname"].dropna().unique())),
+        "matched_vectors": [
+            "Fuerza Bruta & Credenciales",
+            "Inicios de Sesión Sospechosos",
+            "Escalamiento de Privilegios",
+            "Comandos y Procesos (LOLBins)",
+            "Movimiento Lateral",
+            "Otras Anomalías / Exfiltración",
+        ],
+        "kill_chain": (
+            "Visión consolidada multicapa: ataque distribuido que abarca acceso"
+            " inicial RDP y pulverización de contraseñas, ejecución de scripts"
+            " ofuscados, movimiento lateral hacia servidores de archivos,"
+            " intento de ransomware y preparación de exfiltración de datos."
+        ),
+        "filter": lambda d: d[
+            d["Severity"].isin(["High", "Warning", "Critical"])
+            | d["Vector_Analitico"].ne("Actividad Normal / Línea Base")
+        ],
+        "risk_level": "CRÍTICO",
+        "mitre_technique": (
+            "T1078, T1110.003, T1059.001, T1021.002, T1486, T1490, T1048"
+        ),
+        "action": (
+            "Activar el Comité de Crisis de Ciberseguridad. Ejecutar contención"
+            " coordinada perimetral, aislar hosts afectados (APP-SRV01,"
+            " FS-SRV01, DC-01, WS-023, WEB-01) y activar investigación forense"
+            " integral."
+        ),
+    },
     "INC-01": {
         "title": (
             "INC-01: Intrusión RDP, Ejecución de LOLBins y Exfiltración de"
@@ -244,6 +303,12 @@ catalog_incidentes = {
         ),
         "badge": "CRÍTICO",
         "hosts": ["APP-SRV01", "FS-SRV01"],
+        "matched_vectors": [
+            "Inicios de Sesión Sospechosos",
+            "Comandos y Procesos (LOLBins)",
+            "Movimiento Lateral",
+            "Otras Anomalías / Exfiltración",
+        ],
         "kill_chain": (
             "1. Acceso RDP exitoso (LogonType=10) en APP-SRV01 -> 2. Invocación"
             " de PowerShell ofuscado (-EncodedCommand) -> 3. Movimiento lateral"
@@ -259,6 +324,7 @@ catalog_incidentes = {
                 | d["Process_CommandLine"].str.contains(
                     "powershell|tar|Get-LocalGroupMember", case=False, na=False
                 )
+                | d["Destination"].str.contains("Finance", case=False, na=False)
             )
         ],
         "risk_level": "CRÍTICO",
@@ -277,10 +343,12 @@ catalog_incidentes = {
         ),
         "badge": "ALTO",
         "hosts": ["DC-01", "DC01"],
+        "matched_vectors": ["Fuerza Bruta & Credenciales"],
         "kill_chain": (
             "Ráfaga continua y secuencial de eventos EventID 4625 (Logon"
-            " Failure) en ventanas de segundos, evidenciando un intento"
-            " automatizado de adivinación o pulverización de contraseñas."
+            " Failure) originada desde múltiples IPs internas (10.10.1.x,"
+            " 10.10.2.x, 10.10.3.x) intentando autenticar sistemáticamente"
+            " contra cuentas corporativas clave en DC-01."
         ),
         "filter": lambda d: d[
             (d["Hostname"].str.contains("DC", case=False, na=False))
@@ -295,18 +363,22 @@ catalog_incidentes = {
         ),
         "action": (
             "Bloquear temporalmente las cuentas de usuario afectadas, forzar"
-            " cambio de credenciales y auditar estaciones de origen en busca de"
-            " malware."
+            " cambio de credenciales y aislar estaciones de origen para"
+            " análisis de malware."
         ),
     },
     "INC-03": {
         "title": "INC-03: Fuzzing Web y Ejecución de Comandos Anómalos",
         "badge": "MEDIO / ALTO",
         "hosts": ["WEB-01"],
+        "matched_vectors": [
+            "Comandos y Procesos (LOLBins)",
+            "Otras Anomalías / Exfiltración",
+        ],
         "kill_chain": (
             "Escaneo masivo de rutas no autorizadas (/admin/, /api/v1/export)"
-            " seguido de ejecución de subproceso de consola 'cmd.exe /c whoami'"
-            " bajo el árbol del servidor web."
+            " desde IP externa, seguido de ejecución de subproceso de consola"
+            " interactiva 'cmd.exe /c whoami' bajo el proceso del servidor web."
         ),
         "filter": lambda d: d[
             (d["Hostname"] == "WEB-01")
@@ -331,11 +403,17 @@ catalog_incidentes = {
         "title": "INC-04: Actividad de Ransomware y Destrucción de Backups",
         "badge": "CRÍTICO",
         "hosts": ["WS-023", "FS-SRV01"],
+        "matched_vectors": [
+            "Inicios de Sesión Sospechosos",
+            "Comandos y Procesos (LOLBins)",
+            "Movimiento Lateral",
+            "Otras Anomalías / Exfiltración",
+        ],
         "kill_chain": (
             "1. Ejecución de PowerShell codificado en WS-023 -> 2. Acceso"
             " simultáneo y masivo a decenas de archivos en \\\\FS-SRV01\\Finance"
             " -> 3. Ejecución de 'vssadmin.exe delete shadows /all /quiet' para"
-            " impedir la recuperación de datos."
+            " inhibir la recuperación del sistema."
         ),
         "filter": lambda d: d[
             (
@@ -377,7 +455,7 @@ selected_inc_key = st.selectbox(
 
 inc_meta = catalog_incidentes[selected_inc_key]
 
-# Dataset contextual
+# Dataset contextual rector
 df_incidente = inc_meta["filter"](df).copy().sort_values("Timestamp")
 if df_incidente.empty:
   df_incidente = df[df["Hostname"].isin(inc_meta["hosts"])].copy()
@@ -406,9 +484,9 @@ usuarios_implicados = [
     for u in df_incidente["User"].dropna().unique()
     if u not in ["SYSTEM", "nan", ""]
 ]
-str_usuarios = ", ".join(usuarios_implicados[:6])
+str_usuarios = ", ".join(usuarios_implicados[:8])
 
-# Tarjeta de resumen
+# Tarjeta de resumen visual
 with st.container():
   c1, c2 = st.columns([3, 1])
   with c1:
@@ -418,8 +496,8 @@ with st.container():
         f" `{str_ips_atacantes}`"
     )
     st.markdown(
-        f"**🎯 Activos / Víctimas Comprometidos:** `{str_hosts_victimas}`"
-        f" &nbsp;|&nbsp; **Usuarios:** `{str_usuarios}`"
+        f"**🎯 Activos Víctima Comprometidos:** `{str_hosts_victimas}`"
+        f" &nbsp;|&nbsp; **Cuentas Involucradas:** `{str_usuarios}`"
     )
     st.markdown(f"**⚡ Kill Chain Reconstruida:** {inc_meta['kill_chain']}")
   with c2:
@@ -427,6 +505,11 @@ with st.container():
     if inc_meta["badge"] == "CRÍTICO":
       st.markdown(
           f"<span class='badge-critical'>{inc_meta['badge']}</span>",
+          unsafe_allow_html=True,
+      )
+    elif inc_meta["badge"] == "VISTA GLOBAL":
+      st.markdown(
+          f"<span class='badge-all'>{inc_meta['badge']}</span>",
           unsafe_allow_html=True,
       )
     else:
@@ -465,11 +548,29 @@ with st.expander(
   )
 
 # ==========================================================
-# EVALUACIÓN ASISTIDA POR IA (CONEXIÓN DIRECTA Y ROBUSTA)
+# EVALUACIÓN ASISTIDA POR IA (GUARDADO EN VARIABLE + POP-UP MODAL)
 # ==========================================================
 st.markdown("#### 🤖 Evaluación Analítica con Inteligencia Artificial")
 
-if st.button(f"Ejecutar Evaluación Asistida por IA sobre {selected_inc_key}"):
+
+# Modal interactivo (Pop-up en pantalla)
+@st.dialog(f"Dictamen Técnico SOC L2 - {selected_inc_key}", width="large")
+def modal_dictamen_ia(texto_ia, inc_titulo):
+  st.markdown(f"### 📋 Evaluación de Ciberseguridad: {inc_titulo}")
+  st.markdown("---")
+  st.markdown(texto_ia)
+  st.markdown("---")
+  st.caption(
+      "Dictamen generado y estructurado con el motor Gemini API bajo marco"
+      " MITRE ATT&CK / D3FEND."
+  )
+
+
+col_btn_ia, col_enlace_ia = st.columns([1, 2])
+with col_btn_ia:
+  ejecutar_ia = st.button(f"Ejecutar Análisis IA ({selected_inc_key})")
+
+if ejecutar_ia:
   if not client:
     st.error(
         "Clave 'GEMINI_API_KEY' no detectada. Configúrala en Settings > Secrets"
@@ -487,9 +588,7 @@ if st.button(f"Ejecutar Evaluación Asistida por IA sobre {selected_inc_key}"):
           "Process_CommandLine",
       ]
       muestra_logs = (
-          df_incidente[cols_forenses]
-          .head(10)
-          .to_csv(index=False, sep="|")
+          df_incidente[cols_forenses].head(12).to_csv(index=False, sep="|")
       )
 
       prompt = f"""
@@ -502,10 +601,10 @@ Muestra de telemetría forense (CSV delimitado por |):
 {muestra_logs}
 
 Genera un dictamen técnico profesional y conciso en Markdown:
-1. Hipótesis del Incidente y Vector Inicial (Causalidad temporal).
-2. Mapeo de TTPs (MITRE ATT&CK).
-3. Nivel de Confianza (Confidence Level: Alto/Medio/Bajo con justificación basada en logs).
-4. Contramedidas Defensivas Inmediatas (MITRE D3FEND).
+1. Hipótesis del Incidente y Vector Inicial (Causalidad temporal específica de {selected_inc_key}).
+2. Mapeo de TTPs (MITRE ATT&CK identificados en este conjunto de eventos).
+3. Nivel de Confianza (Confidence Level: Alto/Medio/Bajo con justificación basada en los logs).
+4. Contramedidas Defensivas Inmediatas (MITRE D3FEND aplicables a {selected_inc_key}).
 """
       modelos_a_probar = [
           "gemini-3.8-flash",
@@ -521,10 +620,11 @@ Genera un dictamen técnico profesional y conciso en Markdown:
             res = client.models.generate_content(model=mod, contents=prompt)
             if res and hasattr(res, "text") and res.text:
               respuesta_obtenida = res.text
+              # Se guarda estrictamente en una variable de sesión
               st.session_state[f"ai_report_{selected_inc_key}"] = (
                   respuesta_obtenida
               )
-              st.success(f"✅ Análisis completado con éxito (motor: {mod}).")
+              st.session_state[f"ai_engine_{selected_inc_key}"] = mod
               break
           except Exception as e:
             ultimo_error = str(e)
@@ -539,12 +639,21 @@ Genera un dictamen técnico profesional y conciso en Markdown:
       if not respuesta_obtenida:
         st.error(f"❌ Error al conectar con la API de Gemini: {ultimo_error}")
 
-# Despliegue único del resultado de la IA (solo si la IA respondió con éxito)
+# Enlace / Botón para consultar el Pop-Up (Modal) solo si el usuario desea abrirlo
 ai_text_actual = st.session_state.get(f"ai_report_{selected_inc_key}", "")
-if ai_text_actual:
-  with st.container():
-    st.markdown("##### 📄 Dictamen Técnico del Analista IA:")
-    st.markdown(ai_text_actual)
+engine_usado = st.session_state.get(f"ai_engine_{selected_inc_key}", "gemini")
+
+with col_enlace_ia:
+  if ai_text_actual:
+    if st.button(
+        f"🔍 Ver Dictamen Técnico de IA en Ventana Modal ({selected_inc_key})"
+    ):
+      modal_dictamen_ia(ai_text_actual, inc_meta["title"])
+  else:
+    st.caption(
+        "ℹ️ Presiona el botón para procesar la telemetría con IA y generar el"
+        " dictamen técnico."
+    )
 
 # ==========================================================
 # 3. DASHBOARD TOTALMENTE DINÁMICO (FILTROS REACTIVOS)
@@ -564,7 +673,7 @@ with st.container():
         default=sevs_disponibles,
     )
   with col_f2:
-    hosts_en_inc = ["Todos los del incidente"] + sorted(
+    hosts_en_inc = ["Todos los de la selección"] + sorted(
         list(df_incidente["Hostname"].unique())
     )
     filtro_host = st.selectbox("Filtrar por Host específico:", hosts_en_inc)
@@ -576,7 +685,7 @@ with st.container():
 
 # APLICACIÓN DE FILTROS AL DASHBOARD
 df_dash = df_incidente[df_incidente["Severity"].isin(filtro_sev)].copy()
-if filtro_host != "Todos los del incidente":
+if filtro_host != "Todos los de la selección":
   df_dash = df_dash[df_dash["Hostname"] == filtro_host]
 if filtro_vec != "Todos los vectores":
   df_dash = df_dash[df_dash["Vector_Analitico"] == filtro_vec]
@@ -630,7 +739,7 @@ with d_col2:
     st.plotly_chart(fig_vec, use_container_width=True)
 
 # ==========================================================
-# 4. CLASIFICACIÓN DE RIESGOS (MATRIZ ÍNTEGRA Y CONTEXTUAL)
+# 4. CLASIFICACIÓN DE RIESGOS (CON VECTOR COINCIDENTE DESTACADO)
 # ==========================================================
 st.markdown("---")
 st.markdown(
@@ -644,74 +753,114 @@ st.markdown(
 )
 st.warning(f"**Directiva de Respuesta Operativa:** {inc_meta['action']}")
 
-justificacion_real = (
-    f"Afectación confirmada en los activos ({str_hosts_victimas}) por parte de"
-    f" las fuentes de origen ({str_ips_atacantes}). Compromiso de cuentas:"
-    f" ({str_usuarios})."
+st.markdown(
+    "#### **Evaluación Heurística de Vectores (Destacado del Incidente"
+    " Seleccionado):**"
 )
 
-risk_matrix_display = {
-    "Vector / Categoría Heurística": [
-        "Fuerza Bruta & Credenciales",
-        "Inicios de Sesión Sospechosos",
-        "Escalamiento de Privilegios",
-        "Comandos y Procesos (LOLBins)",
-        "Movimiento Lateral",
-        "Otras Anomalías / Exfiltración",
-    ],
-    "Estado en este Incidente": [
-        "Detectado" if "INC-02" == selected_inc_key else "Monitoreado",
-        "Detectado"
-        if selected_inc_key in ["INC-01", "INC-04"]
-        else "Línea Base",
-        "Detectado"
-        if selected_inc_key in ["INC-01", "INC-04"]
-        else "Línea Base",
-        "Detectado"
-        if selected_inc_key in ["INC-01", "INC-03", "INC-04"]
-        else "Línea Base",
-        "Detectado"
-        if selected_inc_key in ["INC-01", "INC-04"]
-        else "Línea Base",
-        "Detectado"
-        if selected_inc_key in ["INC-01", "INC-03", "INC-04"]
-        else "Línea Base",
-    ],
-    "Justificación / Evidencia en Telemetría": [
-        (
-            f"Fallas 4625 secuenciales desde ({str_ips_atacantes}) hacia"
+# Lista canónica de los 6 vectores
+vectores_totales = [
+    {
+        "nombre": "Fuerza Bruta & Credenciales",
+        "mitre": "T1110 (Brute Force / Password Spraying)",
+        "desc": (
+            f"Fallas secuenciales EventID 4625 desde ({str_ips_atacantes}) hacia"
+            f" ({str_hosts_victimas}). Cuentas: ({str_usuarios})."
+        ),
+        "accion": (
+            f"Bloquear IPs de origen ({str_ips_atacantes}) y forzar rotación de"
+            " contraseñas."
+        ),
+    },
+    {
+        "nombre": "Inicios de Sesión Sospechosos",
+        "mitre": "T1078 (Valid Accounts / RDP LogonType=10)",
+        "desc": (
+            "Inicios de sesión remotos interactivos o con cuentas de servicio"
+            f" en ({str_hosts_victimas})."
+        ),
+        "accion": (
+            "Revocar tokens Kerberos/NTLM y aislar hosts para contención de"
+            " sesión."
+        ),
+    },
+    {
+        "nombre": "Escalamiento de Privilegios",
+        "mitre": "T1078 / T1069 (Permission Groups Discovery / EventID 4672)",
+        "desc": (
+            "Asignación anómala de privilegios de Administrador o invocación de"
+            " Get-LocalGroupMember."
+        ),
+        "accion": (
+            "Auditar asignaciones de grupos de dominio y revocar membresías"
+            " sospechosas."
+        ),
+    },
+    {
+        "nombre": "Comandos y Procesos (LOLBins)",
+        "mitre": (
+            "T1059 (Command and Scripting Interpreter - PowerShell ofuscado /"
+            " cmd.exe)"
+        ),
+        "desc": (
+            "Ejecución de PowerShell con flags -EncodedCommand, vssadmin delete"
+            " shadows o cmd.exe anómalo."
+        ),
+        "accion": (
+            "Terminar subprocesos hijos, bloquear hashes maliciosos y aislar"
+            " endpoints."
+        ),
+    },
+    {
+        "nombre": "Movimiento Lateral",
+        "mitre": "T1021.002 (SMB/Windows Admin Shares / EventID 5140/5145)",
+        "desc": (
+            "Navegación e interconexión interna hacia recursos compartidos en"
             f" ({str_hosts_victimas})."
-            if selected_inc_key == "INC-02"
-            else "Intentos esporádicos habituales en línea base."
         ),
-        (
-            f"LogonType=10 remoto o accesos privilegiados en"
-            f" ({str_hosts_victimas})."
+        "accion": (
+            "Segmentar VLANs, revocar accesos SMB compartidos y deshabilitar"
+            " NTLMv1."
         ),
-        "Consultas a grupos locales o privilegios especiales asignados (4672).",
-        (
-            f"Invocación de procesos sospechosos acordes a"
-            f" {inc_meta['mitre_technique']}."
+    },
+    {
+        "nombre": "Otras Anomalías / Exfiltración",
+        "mitre": "T1048 (Exfiltration) / T1486 (Data Encrypted for Impact)",
+        "desc": (
+            "Staging con tar.exe, sockets salientes hacia IPs externas públicas"
+            " o destrucción masiva de backups."
         ),
-        (
-            f"Conexiones de red internas o accesos a recursos compartidos en"
-            f" ({str_hosts_victimas})."
-        ),
-        justificacion_real,
-    ],
-    "Decisión Operativa Inmediata": [
-        (
-            f"Bloqueo perimetral de IPs atacantes ({str_ips_atacantes}) y"
-            " forzar rotación de credenciales"
-        ),
-        "Revocación de tokens y aislamiento del host",
-        "Auditoría de membresías en Directorio Activo",
-        "Terminar proceso y bloquear hash en EDR",
-        "Revocar accesos de red y aislar servidor de archivos",
-        inc_meta["action"],
-    ],
-}
-st.dataframe(pd.DataFrame(risk_matrix_display), use_container_width=True)
+        "accion": inc_meta["action"],
+    },
+]
+
+# Despliegue visual destacando claramente el/los vectores que hacen MATCH con el incidente
+for v in vectores_totales:
+  es_match = v["nombre"] in inc_meta["matched_vectors"]
+  if es_match:
+    st.markdown(
+        f"""
+            <div class='highlight-card'>
+                <span style='background-color: #2563EB; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;'>🎯 VECTOR COINCIDENTE (MATCH ACTIVO)</span>
+                <h4 style='color: #1E40AF; margin-top: 6px; margin-bottom: 4px;'>{v['nombre']}</h4>
+                <b>TTPs Asociadas:</b> {v['mitre']}<br/>
+                <b>Evidencia Detectada:</b> {v['desc']}<br/>
+                <b>Acción Inmediata:</b> <span style='color: #DC2626; font-weight: bold;'>{v['accion']}</span>
+            </div>
+            """,
+        unsafe_allow_html=True,
+    )
+  else:
+    st.markdown(
+        f"""
+            <div class='normal-card'>
+                <span style='background-color: #64748B; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;'>Línea Base / No prioritario para {selected_inc_key}</span>
+                <h5 style='color: #475569; margin-top: 6px; margin-bottom: 2px;'>{v['nombre']}</h5>
+                <small style='color: #64748B;'>TTP: {v['mitre']} | Estado: Monitoreado sin anomalía primaria.</small>
+            </div>
+            """,
+        unsafe_allow_html=True,
+    )
 
 # ==========================================================
 # 5. INFORME TÉCNICO DE INCIDENTE (INTEGRIDAD TOTAL)
@@ -729,8 +878,10 @@ if ai_text_actual:
   ]
   extracto = " ".join(primeras[:3]) if primeras else ""
   summary_val = (
-      f"Dictamen Técnico SOC L2 para {inc_meta['title']}.\nActivos:"
-      f" {str_hosts_victimas} | IPs Atacantes: {str_ips_atacantes}\n{extracto}"
+      f"Dictamen Técnico SOC L2 para {inc_meta['title']}.\n• Activos Víctima:"
+      f" {str_hosts_victimas} | IPs Atacantes: {str_ips_atacantes}\n• Vector"
+      f" Coincidente Principal: {', '.join(inc_meta['matched_vectors'])}\n•"
+      f" Síntesis Analítica: {extracto}"
   )
 else:
   summary_val = (
@@ -741,6 +892,8 @@ else:
       f"• IPs de Origen / Atacantes Detectadas ({len(ips_atacantes_detectadas)}):"
       f" {str_ips_atacantes}\n"
       f"• Cuentas Comprometidas: {str_usuarios}\n"
+      f"• Vector Primario Coincidente:"
+      f" {', '.join(inc_meta['matched_vectors'])}\n"
       f"• Evidencia Forense: Se correlacionaron {len(df_incidente)} eventos de"
       f" telemetría confirmando patrones de {inc_meta['mitre_technique']}.\n"
       f"• Directiva Inmediata: {inc_meta['action']}"
@@ -759,7 +912,15 @@ st.markdown("### 📄 6. Exportación de Informe Técnico a PDF")
 
 
 def generar_pdf(
-    inc_id, inc_titulo, resumen, analista, riesgo, attacker, target, ai_text
+    inc_id,
+    inc_titulo,
+    resumen,
+    analista,
+    riesgo,
+    attacker,
+    target,
+    ai_text,
+    vectores_match,
 ):
   buffer = io.BytesIO()
   doc = SimpleDocTemplate(
@@ -806,7 +967,8 @@ def generar_pdf(
       Paragraph(
           f"<b>Incidente:</b> {inc_titulo}<br/>"
           f"<b>Analista:</b> {analista} | <b>Nivel de Riesgo:</b> {riesgo}<br/>"
-          f"<b>IPs Atacantes / Origen ({len(ips_atacantes_detectadas)}):</b> {attacker}<br/>"
+          f"<b>Vectores Coincidentes:</b> {', '.join(vectores_match)}<br/>"
+          f"<b>IPs Atacantes / Origen:</b> {attacker}<br/>"
           f"<b>Activos Víctima:</b> {target} | <b>Usuarios:</b> {str_usuarios}",
           body_style,
       )
@@ -825,7 +987,7 @@ def generar_pdf(
       if ai_text
       else (
           f"Se analizó la telemetría del incidente {inc_id}. La correlación confirma la afectación de los activos "
-          f"{target} por parte de las fuentes {attacker}. Se identificaron TTPs acordes a MITRE ATT&CK."
+          f"{target} por parte de las fuentes {attacker}. Se identificaron patrones coincidentes con {', '.join(vectores_match)}."
       )
   )
   story.append(Paragraph(texto_ai, body_style))
@@ -871,6 +1033,7 @@ if st.button(f"📥 Descargar Informe Técnico Oficial en PDF ({selected_inc_key
       str_ips_atacantes,
       str_hosts_victimas,
       ai_text_actual,
+      inc_meta["matched_vectors"],
   )
   st.download_button(
       label=f"Descargar PDF Oficial ({selected_inc_key})",
