@@ -1,13 +1,19 @@
 import io
 import os
+import time
 import pandas as pd
 import plotly.express as px
-import streamlit as st
-from google import genai
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+import streamlit as st
+
+# Importación segura del SDK de IA
+try:
+  from google import genai
+except ImportError:
+  genai = None
 
 # ==========================================================
 # CONFIGURACIÓN Y TEMA VISUAL CLARO (ALTO CONTRASTE)
@@ -99,10 +105,12 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Inicialización de API de IA (Secrets de Streamlit o variables de entorno)
+# Inicialización limpia de la API de IA
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 client = None
-if api_key:
+if api_key and genai is not None:
+  api_key = str(api_key).strip().strip('"').strip("'")
+  os.environ["GEMINI_API_KEY"] = api_key
   try:
     client = genai.Client(api_key=api_key)
   except Exception as e:
@@ -120,7 +128,7 @@ with st.sidebar:
       " Operations</h3>",
       unsafe_allow_html=True,
   )
-  if api_key:
+  if client:
     st.success("🟢 Motor de IA: Conectado")
   else:
     st.error("🔴 Motor de IA: Clave ausente en Secrets")
@@ -369,12 +377,12 @@ selected_inc_key = st.selectbox(
 
 inc_meta = catalog_incidentes[selected_inc_key]
 
-# 🎯 DATASET CONTEXTUAL (FILTRO BASE RECTOR DE TODAS LAS FUNCIONALIDADES)
+# Dataset contextual
 df_incidente = inc_meta["filter"](df).copy().sort_values("Timestamp")
 if df_incidente.empty:
   df_incidente = df[df["Hostname"].isin(inc_meta["hosts"])].copy()
 
-# 🎯 CÁLCULO DINÁMICO E ÍNTEGRO DE TODOS LOS ACTIVOS, IPs Y USUARIOS INVOLUCRADOS
+# Cálculo dinámico de IPs, Hosts y Usuarios
 ips_atacantes_detectadas = [
     ip
     for ip in df_incidente["Source_IP"].dropna().unique()
@@ -400,7 +408,7 @@ usuarios_implicados = [
 ]
 str_usuarios = ", ".join(usuarios_implicados[:6])
 
-# Resumen visual del incidente activo con todos los activos detectados
+# Tarjeta de resumen
 with st.container():
   c1, c2 = st.columns([3, 1])
   with c1:
@@ -457,21 +465,18 @@ with st.expander(
   )
 
 # ==========================================================
-# EVALUACIÓN ASISTIDA POR IA (OPTIMIZADA, RÁPIDA Y CON TIMEOUT)
+# EVALUACIÓN ASISTIDA POR IA (CONEXIÓN DIRECTA Y ROBUSTA)
 # ==========================================================
 st.markdown("#### 🤖 Evaluación Analítica con Inteligencia Artificial")
+
 if st.button(f"Ejecutar Evaluación Asistida por IA sobre {selected_inc_key}"):
   if not client:
     st.error(
-        "Clave 'GEMINI_API_KEY' no detectada en los Secrets de Streamlit."
-        " Configúrala en Settings > Secrets."
+        "Clave 'GEMINI_API_KEY' no detectada. Configúrala en Settings > Secrets"
+        " en Streamlit Cloud."
     )
   else:
-    with st.spinner(
-        f"Correlacionando TTPs y generando dictamen técnico para"
-        f" {selected_inc_key}..."
-    ):
-      # 1. Payload de logs compacto para reducir tokens y tiempo de respuesta
+    with st.spinner(f"Consultando a Gemini para {selected_inc_key}..."):
       cols_forenses = [
           "Timestamp",
           "Event_ID",
@@ -481,91 +486,64 @@ if st.button(f"Ejecutar Evaluación Asistida por IA sobre {selected_inc_key}"):
           "Destination",
           "Process_CommandLine",
       ]
-      logs_compactos = (
+      muestra_logs = (
           df_incidente[cols_forenses]
-          .head(15)
+          .head(10)
           .to_csv(index=False, sep="|")
       )
 
       prompt = f"""
-            Actúa como Analista Senior SOC L2. Analiza este incidente: {inc_meta['title']}
-            - IPs Origen/Atacantes: {str_ips_atacantes}
-            - Hosts Víctima: {str_hosts_victimas}
-            - Cuentas comprometidas: {str_usuarios}
+Eres un Analista SOC L2 Senior. Analiza el siguiente incidente de seguridad: {inc_meta['title']}.
+- Actores atacantes (IPs): {str_ips_atacantes}
+- Activos víctima: {str_hosts_victimas}
+- Cuentas involucradas: {str_usuarios}
 
-            Muestra de telemetría (CSV delimitado por |):
-            {logs_compactos}
+Muestra de telemetría forense (CSV delimitado por |):
+{muestra_logs}
 
-            Escribe un dictamen técnico estructurado y directo en markdown:
-            ### 1. Hipótesis del Vector y Causalidad Temporal
-            ### 2. TTPs Detectados (MITRE ATT&CK)
-            ### 3. Nivel de Confianza (Confidence Level: Alto/Medio/Bajo con justificación)
-            ### 4. Contramedidas Defensivas Inmediatas (MITRE D3FEND)
-            """
-
-      # Lista priorizada de modelos rápidos y estables
-      modelos = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash"]
-      analisis_ok = None
+Genera un dictamen técnico profesional y conciso en Markdown:
+1. Hipótesis del Incidente y Vector Inicial (Causalidad temporal).
+2. Mapeo de TTPs (MITRE ATT&CK).
+3. Nivel de Confianza (Confidence Level: Alto/Medio/Bajo con justificación basada en logs).
+4. Contramedidas Defensivas Inmediatas (MITRE D3FEND).
+"""
+      modelos_a_probar = [
+          "gemini-3.8-flash",
+          "gemini-2.0-flash",
+          "gemini-1.5-flash",
+      ]
+      respuesta_obtenida = None
       ultimo_error = ""
 
-      # Configuración de timeout para evitar que el spinner quede en bucle infinito
-      config_params = {"temperature": 0.2, "max_output_tokens": 1000}
+      for mod in modelos_a_probar:
+        for intento in range(2):
+          try:
+            res = client.models.generate_content(model=mod, contents=prompt)
+            if res and hasattr(res, "text") and res.text:
+              respuesta_obtenida = res.text
+              st.session_state[f"ai_report_{selected_inc_key}"] = (
+                  respuesta_obtenida
+              )
+              st.success(f"✅ Análisis completado con éxito (motor: {mod}).")
+              break
+          except Exception as e:
+            ultimo_error = str(e)
+            if "503" in ultimo_error or "high demand" in ultimo_error.lower():
+              time.sleep(2)
+              continue
+            else:
+              break
+        if respuesta_obtenida:
+          break
 
-      for m in modelos:
-        try:
-          # Intento con llamada directa y timeout preventivo
-          res = client.models.generate_content(
-              model=m, contents=prompt, config=config_params
-          )
-          if res and hasattr(res, "text") and res.text:
-            analisis_ok = res.text
-            st.session_state[f"ai_report_{selected_inc_key}"] = analisis_ok
-            st.success(
-                f"✅ Evaluación generada exitosamente utilizando el motor"
-                f" '{m}'."
-            )
-            break
-        except Exception as e:
-          ultimo_error = str(e)
-          continue
+      if not respuesta_obtenida:
+        st.error(f"❌ Error al conectar con la API de Gemini: {ultimo_error}")
 
-      # Fallback Heurístico Local: si la API externa se satura o excede el tiempo
-      if not analisis_ok:
-        st.warning(
-            "⚠️ Los servidores de IA tardaron en responder. Se activó el"
-            " **Motor Heurístico Local de Contingencia SOC L2**:"
-        )
-        analisis_fallback = f"""
-### 1. Hipótesis del Vector y Causalidad Temporal
-Se confirma compromiso coordinado sobre los activos **{str_hosts_victimas}** originado desde las fuentes **{str_ips_atacantes}**. La secuencia temporal demuestra una transición de {inc_meta['kill_chain']}.
-
-### 2. TTPs Detectados (MITRE ATT&CK)
-- **Técnicas Clave:** {inc_meta['mitre_technique']}
-- **Cuentas Implicadas:** {str_usuarios}
-- **Severidad Observada:** {inc_meta['risk_level']}
-
-### 3. Nivel de Confianza (Confidence Level)
-- **Evaluación:** **ALTO**
-- **Justificación:** Correlación directa entre eventos de autenticación, ejecución de comandos y telemetría de red observada en {len(df_incidente)} registros empíricos.
-
-### 4. Contramedidas Defensivas Inmediatas (MITRE D3FEND)
-- **D3-NID / D3-IA:** {inc_meta['action']}
-- **D3-ERA:** Aislar hosts víctimas ({str_hosts_victimas}) del segmento de red corporativo.
-- **D3-CRA:** Forzar expiración y rotación inmediata de credenciales para ({str_usuarios}).
-- **DFIR Escalation:** Proceder con preservación de volcado de memoria física RAM y adquisición de artefactos forenses.
-"""
-        st.session_state[f"ai_report_{selected_inc_key}"] = analisis_fallback
-
+# Despliegue único del resultado de la IA (solo si la IA respondió con éxito)
 ai_text_actual = st.session_state.get(f"ai_report_{selected_inc_key}", "")
 if ai_text_actual:
   with st.container():
-    st.markdown("##### 📄 Dictamen Técnico del Incidente:")
-    st.markdown(ai_text_actual)
-
-ai_text_actual = st.session_state.get(f"ai_report_{selected_inc_key}", "")
-if ai_text_actual:
-  with st.container():
-    st.markdown("##### 📄 Dictamen Emitido por el Asistente de IA:")
+    st.markdown("##### 📄 Dictamen Técnico del Analista IA:")
     st.markdown(ai_text_actual)
 
 # ==========================================================
@@ -666,7 +644,6 @@ st.markdown(
 )
 st.warning(f"**Directiva de Respuesta Operativa:** {inc_meta['action']}")
 
-# Justificación adaptada con todas las IPs y activos reales
 justificacion_real = (
     f"Afectación confirmada en los activos ({str_hosts_victimas}) por parte de"
     f" las fuentes de origen ({str_ips_atacantes}). Compromiso de cuentas:"
