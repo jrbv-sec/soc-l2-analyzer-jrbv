@@ -10,7 +10,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 # ==========================================================
-# CONFIGURACIÓN Y TEMA VISUAL SOC DARK NEXT-GEN (NEUTRAL BRAND)
+# CONFIGURACIÓN Y TEMA VISUAL CLARO MODERNO (ALTO CONTRASTE)
 # ==========================================================
 st.set_page_config(
     page_title="SOC L2 Defense Workbench",
@@ -22,73 +22,71 @@ st.set_page_config(
 st.markdown(
     """
 <style>
-    /* Tema oscuro profundo y profesional */
+    /* Fondo claro profesional y limpio */
     .stApp {
-        background-color: #0B132B;
-        color: #E2E8F0;
+        background-color: #F8FAFC;
+        color: #0F172A;
     }
     .main-title {
         font-size: 2.2rem;
         font-weight: 800;
-        background: linear-gradient(90deg, #00F0FF, #3B82F6, #10B981);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #0F172A;
         margin-bottom: 0.2rem;
     }
     .sub-title {
-        font-size: 1rem;
-        color: #94A3B8;
+        font-size: 1.05rem;
+        color: #475569;
         margin-bottom: 1.5rem;
     }
-    /* Tarjetas de Métricas */
+    /* Tarjetas de Métricas en Fondo Claro */
     div[data-testid="stMetric"] {
-        background-color: #1C2541;
-        border: 1px solid #3A506B;
-        padding: 14px;
+        background-color: #FFFFFF;
+        border: 1px solid #CBD5E1;
+        padding: 16px;
         border-radius: 10px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
     div[data-testid="stMetricLabel"] {
-        color: #94A3B8 !important;
-        font-weight: 600;
+        color: #475569 !important;
+        font-weight: 700;
     }
     div[data-testid="stMetricValue"] {
-        color: #00F0FF !important;
+        color: #1E40AF !important;
         font-family: monospace;
-        font-size: 1.8rem;
+        font-size: 1.9rem;
     }
-    /* Badges de Estado */
+    /* Contenedores con borde sutil y fondo blanco */
+    div[data-testid="stVerticalBlock"] > div[data-testid="stContainer"] {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        padding: 18px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    /* Badges de Severidad con alto contraste */
     .badge-critical {
-        background-color: #EF4444;
+        background-color: #DC2626;
         color: #FFFFFF;
         padding: 4px 10px;
-        border-radius: 8px;
+        border-radius: 6px;
         font-weight: bold;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
     }
     .badge-high {
-        background-color: #F97316;
+        background-color: #EA580C;
         color: #FFFFFF;
         padding: 4px 10px;
-        border-radius: 8px;
+        border-radius: 6px;
         font-weight: bold;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
     }
     .badge-medium {
-        background-color: #EAB308;
-        color: #1E293B;
+        background-color: #D97706;
+        color: #FFFFFF;
         padding: 4px 10px;
-        border-radius: 8px;
-        font-weight: bold;
-        font-size: 0.8rem;
-    }
-    .badge-category {
-        background-color: #1E3A8A;
-        color: #93C5FD;
-        padding: 3px 8px;
         border-radius: 6px;
-        font-size: 0.8rem;
-        font-weight: 600;
+        font-weight: bold;
+        font-size: 0.85rem;
     }
 </style>
 """,
@@ -122,7 +120,7 @@ with st.sidebar:
       unsafe_allow_html=True,
   )
   st.markdown(
-      "<h3 style='text-align: center; color: #00F0FF; margin-top: 0;'>Security"
+      "<h3 style='text-align: center; color: #1E40AF; margin-top: 0;'>Security"
       " Operations</h3>",
       unsafe_allow_html=True,
   )
@@ -412,9 +410,9 @@ selected_inc_key = st.selectbox(
 
 inc_meta = catalog_incidentes[selected_inc_key]
 
-# Resumen visual del incidente activo
+# Resumen visual del incidente activo con proporciones corregidas
 with st.container():
-  c1, c2 = st.columns()
+  c1, c2 = st.columns([3, 1])
   with c1:
     st.markdown(f"#### 🔎 **{inc_meta['title']}**")
     st.markdown(
@@ -423,7 +421,7 @@ with st.container():
     )
     st.markdown(f"**⚡ Kill Chain Reconstruida:** {inc_meta['kill_chain']}")
   with c2:
-    st.markdown(f"**Nivel de Severidad:**")
+    st.markdown("**Nivel de Severidad:**")
     if inc_meta["badge"] == "CRÍTICO":
       st.markdown(
           f"<span class='badge-critical'>{inc_meta['badge']}</span>",
@@ -443,8 +441,7 @@ if df_incidente.empty:
 
 # Despliegue de Telemetría Detallada
 with st.expander(
-    f"📋 Telemetría Crítica Correlacionada ({len(df_incidente)} eventos)"
-    " - Detalle Atacante vs. Víctima",
+    f"📋 Telemetría Crítica Correlacionada ({len(df_incidente)} eventos) - Detalle Atacante vs. Víctima",
     expanded=True,
 ):
   st.dataframe(
@@ -568,12 +565,12 @@ with d_col1:
         title="Distribución de Severidad",
         color="Severity",
         color_discrete_map={
-            "High": "#EF4444",
-            "Warning": "#F97316",
-            "Medium": "#EAB308",
-            "Informational": "#3B82F6",
+            "High": "#DC2626",
+            "Warning": "#EA580C",
+            "Medium": "#D97706",
+            "Informational": "#2563EB",
         },
-        template="plotly_dark",
+        template="plotly_white",
     )
     fig_pie.update_layout(margin=dict(t=40, b=20, l=20, r=20))
     st.plotly_chart(fig_pie, use_container_width=True)
@@ -590,9 +587,9 @@ with d_col2:
         x="Vector_Analitico",
         y="Cantidad",
         color="Cantidad",
-        color_continuous_scale="Teal",
+        color_continuous_scale="Blues",
         title="Eventos por Vector de Ataque Detectado",
-        template="plotly_dark",
+        template="plotly_white",
     )
     fig_vec.update_layout(margin=dict(t=40, b=20, l=20, r=20))
     st.plotly_chart(fig_vec, use_container_width=True)
@@ -611,7 +608,6 @@ st.markdown(
 )
 st.warning(f"**Directiva de Respuesta Operativa:** {inc_meta['action']}")
 
-# Desglose de los 6 vectores en la matriz técnica
 risk_matrix_display = {
     "Vector / Categoría Heurística": [
         "Fuerza Bruta & Credenciales",
@@ -723,14 +719,14 @@ def generar_pdf(
       "TitleStyle",
       parent=styles["Heading1"],
       fontSize=16,
-      textColor=colors.HexColor("#0B132B"),
+      textColor=colors.HexColor("#0F172A"),
       spaceAfter=12,
   )
   h2_style = ParagraphStyle(
       "H2Style",
       parent=styles["Heading2"],
       fontSize=12,
-      textColor=colors.HexColor("#1E3A8A"),
+      textColor=colors.HexColor("#1E40AF"),
       spaceBefore=10,
       spaceAfter=6,
   )
@@ -739,7 +735,7 @@ def generar_pdf(
       parent=styles["Normal"],
       fontSize=9.5,
       leading=13,
-      textColor=colors.HexColor("#1F2937"),
+      textColor=colors.HexColor("#334155"),
   )
 
   story = []
