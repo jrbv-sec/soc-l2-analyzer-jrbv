@@ -114,7 +114,7 @@ st.markdown(
 )
 
 st.markdown(
-    "<div class='main-title'>🛡️ SOC L2 DEFENSE WORKBENCH</div>",
+    "<div class='main-title'>🛡️ SOC L2 - JRBL - Plataforma de Defensa</div>",
     unsafe_allow_html=True,
 )
 st.markdown(
