@@ -1,5 +1,6 @@
 import io
 import os
+import re
 import time
 import pandas as pd
 import plotly.express as px
@@ -29,7 +30,7 @@ except ImportError:
 # CONFIGURACIÓN Y TEMA VISUAL CLARO (ALTO CONTRASTE)
 # ==========================================================
 st.set_page_config(
-    page_title="SOC L2 - JRBL - Plataforma de Defensa 🇨🇱",
+    page_title="SOC L2 - JRBL - Plataforma de Defensa",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -51,9 +52,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Título y subtítulo en cadenas lineales seguras
 st.markdown(
-    "<div class='main-title'>🛡️ SOC L2 - JRBL - Plataforma de Defensa 🇨🇱</div>",
+    "<div class='main-title'>🛡️ SOC L2 - JRBL - Plataforma de Defensa</div>",
     unsafe_allow_html=True,
 )
 st.markdown(
@@ -82,7 +82,7 @@ if api_key:
 # Sidebar Operativo
 with st.sidebar:
   st.markdown(
-      "<div style='text-align: center; font-size: 2.8rem; margin-bottom: 0.3rem;'>🛡️ 🇨🇱</div>",
+      "<div style='text-align: center; font-size: 2.8rem; margin-bottom: 0.3rem;'>🛡️</div>",
       unsafe_allow_html=True,
   )
   st.markdown(
@@ -96,10 +96,35 @@ with st.sidebar:
   st.markdown("---")
   st.markdown("**Nivel Operativo:** Analista SOC L2")
   st.markdown("**Marcos Técnicos:**")
-  st.markdown("• MITRE ATT&CK®")
-  st.markdown("• MITRE D3FEND™")
+  st.markdown("• [MITRE ATT&CK®](https://attack.mitre.org/)")
+  st.markdown("• [MITRE D3FEND™](https://d3fend.mitre.org/)")
   st.markdown("---")
   st.caption("Bootcamp de Ciberseguridad Defensiva")
+
+# ==========================================================
+# FUNCIONES AUXILIARES: ENLACES MITRE ATT&CK
+# ==========================================================
+
+
+def mitre_url_for_id(tid: str) -> str:
+  """Genera el enlace canónico de MITRE ATT&CK para técnicas y subtécnicas."""
+  tid = tid.strip().upper()
+  if "." in tid:
+    parent, sub = tid.split(".", 1)
+    return f"https://attack.mitre.org/techniques/{parent}/{sub}/"
+  return f"https://attack.mitre.org/techniques/{tid}/"
+
+
+def formatear_mitre_enlaces(texto_tecnicas: str) -> str:
+  """Convierte identificadores TXXXX o TXXXX.XXX dentro de un texto en enlaces Markdown."""
+
+  def replace_link(match):
+    tid = match.group(0)
+    url = mitre_url_for_id(tid)
+    return f"[{tid}]({url})"
+
+  return re.sub(r"T\d{4}(?:\.\d{3})?", replace_link, texto_tecnicas)
+
 
 # ==========================================================
 # 01 - CARGA DE ARCHIVOS
@@ -396,7 +421,7 @@ df_incidente = inc_meta["filter"](df).copy().sort_values("Timestamp")
 if df_incidente.empty:
   df_incidente = df[df["Hostname"].isin(inc_meta["hosts"])].copy()
 
-# Cálculo dinámico e íntegro de IPs, Hosts y Usuarios
+# Cálculo de IPs, Hosts y Usuarios
 ips_atacantes_detectadas = [
     ip
     for ip in df_incidente["Source_IP"].dropna().unique()
@@ -422,6 +447,9 @@ usuarios_implicados = [
 ]
 str_usuarios = ", ".join(usuarios_implicados[:8])
 
+# TTPs vinculadas con enlaces directos a MITRE ATT&CK
+mitre_linked_html = formatear_mitre_enlaces(inc_meta["mitre_technique"])
+
 # Tarjeta de resumen visual
 with st.container():
   c1, c2 = st.columns(2)
@@ -436,6 +464,7 @@ with st.container():
         f" &nbsp;|&nbsp; **Cuentas Involucradas:** `{str_usuarios}`"
     )
     st.markdown(f"**⚡ Kill Chain Reconstruida:** {inc_meta['kill_chain']}")
+    st.markdown(f"**🔗 TTPs Identificadas (MITRE ATT&CK):** {mitre_linked_html}")
   with c2:
     st.markdown("**Nivel de Severidad:**")
     if inc_meta["badge"] == "CRÍTICO":
@@ -484,7 +513,7 @@ with st.expander(
   )
 
 # ==========================================================
-# EVALUACIÓN ASISTIDA POR IA (RESILIENTE, DINÁMICA Y RÁPIDA)
+# EVALUACIÓN ASISTIDA POR IA (RESILIENTE Y RÁPIDA)
 # ==========================================================
 st.markdown("#### 🤖 Evaluación Analítica con Inteligencia Artificial")
 
@@ -529,7 +558,7 @@ Eres un Analista SOC L2 Senior. Analiza el incidente de seguridad: {inc_meta['ti
 Muestra de telemetría forense (CSV delimitado por |):
 {muestra_logs}
 
-Genera un dictamen técnico profesional y conciso en Markdown:
+Genera un dictamen técnico profesional y conciso en Markdown (incluye hipervínculos a https://attack.mitre.org/techniques/ cada vez que cites una técnica MITRE):
 1. Hipótesis del Incidente y Vector Inicial (Causalidad temporal específica de {selected_inc_key}).
 2. Mapeo de TTPs (MITRE ATT&CK identificados en este conjunto de eventos).
 3. Nivel de Confianza (Confidence Level: Alto/Medio/Bajo con justificación basada en los logs).
@@ -537,7 +566,7 @@ Genera un dictamen técnico profesional y conciso en Markdown:
 """
     respuesta_obtenida = None
 
-    # ESTRATEGIA 1: Descubrimiento dinámico de modelos vía nuevo SDK (google.genai)
+    # ESTRATEGIA 1: SDK Moderno (google.genai)
     if client_new is not None:
       try:
         modelos_validos = []
@@ -574,7 +603,7 @@ Genera un dictamen técnico profesional y conciso en Markdown:
       except Exception:
         pass
 
-    # ESTRATEGIA 2: Descubrimiento dinámico vía SDK Legacy (google.generativeai)
+    # ESTRATEGIA 2: SDK Clásico (google.generativeai)
     if not respuesta_obtenida and genai_legacy is not None and api_key:
       try:
         modelos_legacy = []
@@ -607,18 +636,19 @@ Genera un dictamen técnico profesional y conciso en Markdown:
       except Exception:
         pass
 
-    # ESTRATEGIA 3: Fallback Heurístico SOC L2 Antifallos (Garantía de Entrega)
+    # ESTRATEGIA 3: Fallback Heurístico SOC L2 Antifallos
     if not respuesta_obtenida:
+      mitre_links_doc = formatear_mitre_enlaces(inc_meta["mitre_technique"])
       respuesta_obtenida = f"""### 🛡️ Dictamen Técnico Automatizado SOC L2 ({selected_inc_key})
 
 **1. Hipótesis del Incidente y Vector Inicial:**
-La telemetría correlacionada confirma un compromiso activo sobre los activos `{str_hosts_victimas}` relacionado con el vector de ataque `{', '.join(inc_meta['matched_vectors'])}`. La secuencia temporal evidencia actividad maliciosa vinculada a la fuente `{str_ips_atacantes}`, comprometiendo la integridad operativa mediante la técnica `{inc_meta['mitre_technique']}`.
+La telemetría correlacionada confirma un compromiso activo sobre los activos `{str_hosts_victimas}` relacionado con el vector de ataque `{', '.join(inc_meta['matched_vectors'])}`. La secuencia temporal evidencia actividad maliciosa vinculada a la fuente `{str_ips_atacantes}`, comprometiendo la integridad operativa mediante las técnicas observadas: {mitre_links_doc}.
 
 **2. Mapeo de TTPs (MITRE ATT&CK):**
-- **Táctica / Técnica Principal:** `{inc_meta['mitre_technique']}`
+- **Tácticas / Técnicas Principales:** {mitre_links_doc}
 - **Vector Asociado:** `{', '.join(inc_meta['matched_vectors'])}`
 - **Cuentas Implicadas:** `{str_usuarios}`
-- **Evidencia Empírica:** Ejecución y eventos registrados en `{len(df_incidente)}` registros correlacionados en el dataset de seguridad.
+- **Evidencia Empírica:** Registros correlacionados en `{len(df_incidente)}` eventos del dataset de seguridad.
 
 **3. Nivel de Confianza (Confidence Level):**
 - **Nivel:** **ALTO**
@@ -744,7 +774,6 @@ st.markdown(
     f" D3FEND ({selected_inc_key})"
 )
 
-# Banner Ejecutivo Resumido
 with st.container():
   col_m1, col_m2 = st.columns(2)
   with col_m1:
@@ -763,7 +792,7 @@ with st.container():
         unsafe_allow_html=True,
     )
 
-# Definición de la matriz técnica de los 6 vectores
+# Definición de la matriz técnica con enlaces MITRE interactivos
 matriz_data = [
     {
         "Estado": (
@@ -772,7 +801,8 @@ matriz_data = [
             else "⚪ Línea Base / Monitoreado"
         ),
         "Vector Analítico": "Fuerza Bruta & Credenciales",
-        "TTPs (MITRE ATT&CK)": "T1110 (Password Spraying / Guessing)",
+        "TTP (MITRE ATT&CK)": "T1110.003 - Password Spraying",
+        "MITRE_URL": mitre_url_for_id("T1110.003"),
         "Evidencia Observada": (
             f"Fallas 4625 secuenciales desde {str_ips_atacantes} contra"
             f" {str_hosts_victimas}."
@@ -791,7 +821,8 @@ matriz_data = [
             else "⚪ Línea Base / Monitoreado"
         ),
         "Vector Analítico": "Inicios de Sesión Sospechosos",
-        "TTPs (MITRE ATT&CK)": "T1078 (Valid Accounts / RDP LogonType=10)",
+        "TTP (MITRE ATT&CK)": "T1078 - Valid Accounts / RDP",
+        "MITRE_URL": mitre_url_for_id("T1078"),
         "Evidencia Observada": (
             f"Sesión remota RDP interactiva o anómala en {str_hosts_victimas}."
             if "Inicios de Sesión Sospechosos" in inc_meta["matched_vectors"]
@@ -809,9 +840,8 @@ matriz_data = [
             else "⚪ Línea Base / Monitoreado"
         ),
         "Vector Analítico": "Escalamiento de Privilegios",
-        "TTPs (MITRE ATT&CK)": (
-            "T1078 / T1069 (Permission Groups Discovery / EventID 4672)"
-        ),
+        "TTP (MITRE ATT&CK)": "T1069 - Permission Groups Discovery",
+        "MITRE_URL": mitre_url_for_id("T1069"),
         "Evidencia Observada": (
             "Asignación anómala de privilegios o ejecución de"
             " Get-LocalGroupMember."
@@ -830,9 +860,8 @@ matriz_data = [
             else "⚪ Línea Base / Monitoreado"
         ),
         "Vector Analítico": "Comandos y Procesos (LOLBins)",
-        "TTPs (MITRE ATT&CK)": (
-            "T1059 (PowerShell -EncodedCommand / cmd.exe / vssadmin)"
-        ),
+        "TTP (MITRE ATT&CK)": "T1059.001 - PowerShell",
+        "MITRE_URL": mitre_url_for_id("T1059.001"),
         "Evidencia Observada": (
             "Invocación de subprocesos sospechosos acordes a"
             f" {inc_meta['mitre_technique']}."
@@ -851,9 +880,8 @@ matriz_data = [
             else "⚪ Línea Base / Monitoreado"
         ),
         "Vector Analítico": "Movimiento Lateral",
-        "TTPs (MITRE ATT&CK)": (
-            "T1021.002 (SMB/Windows Admin Shares / EventID 5140/5145)"
-        ),
+        "TTP (MITRE ATT&CK)": "T1021.002 - SMB/Windows Admin Shares",
+        "MITRE_URL": mitre_url_for_id("T1021.002"),
         "Evidencia Observada": (
             f"Navegación e interconexión interna hacia carpetas compartidas en"
             f" {str_hosts_victimas}."
@@ -872,9 +900,8 @@ matriz_data = [
             else "⚪ Línea Base / Monitoreado"
         ),
         "Vector Analítico": "Otras Anomalías / Exfiltración",
-        "TTPs (MITRE ATT&CK)": (
-            "T1048 (Exfiltration) / T1486 (Data Encrypted for Impact) / T1190"
-        ),
+        "TTP (MITRE ATT&CK)": "T1048 - Exfiltration Over Alternative Protocol",
+        "MITRE_URL": mitre_url_for_id("T1048"),
         "Evidencia Observada": (
             f"Staging con tar.exe, conexiones salientes a IPs públicas o"
             f" destrucción de VSS."
@@ -885,8 +912,8 @@ matriz_data = [
     },
 ]
 
-# Despliegue de la Matriz en Tabla Ejecutiva de Alta Densidad
 df_matriz_ejecutiva = pd.DataFrame(matriz_data)
+
 st.dataframe(
     df_matriz_ejecutiva,
     use_container_width=True,
@@ -896,14 +923,21 @@ st.dataframe(
         "Vector Analítico": st.column_config.TextColumn(
             "Categoría Heurística", width=210
         ),
-        "TTPs (MITRE ATT&CK)": st.column_config.TextColumn(
-            "TTPs Asociadas", width=220
+        "TTP (MITRE ATT&CK)": st.column_config.TextColumn(
+            "TTP Identificada", width=240
+        ),
+        "MITRE_URL": st.column_config.LinkColumn(
+            "Ficha Oficial MITRE ATT&CK",
+            help="Enlace directo a la base de conocimiento de MITRE",
+            validate=r"^https://attack\.mitre\.org/.*",
+            max_chars=40,
+            display_text=r"https://attack\.mitre\.org/techniques/(.*)",
         ),
         "Evidencia Observada": st.column_config.TextColumn(
-            "Evidencia Empírica en Telemetría", width=340
+            "Evidencia Empírica en Telemetría", width=320
         ),
         "Contramedida Defensiva (MITRE D3FEND)": st.column_config.TextColumn(
-            "Respuesta Operativa Recomendada", width=340
+            "Respuesta Operativa Recomendada", width=320
         ),
     },
 )
@@ -926,8 +960,9 @@ if ai_text_actual:
   summary_val = (
       f"Dictamen Técnico SOC L2 para {inc_meta['title']}.\n• Activos Víctima:"
       f" {str_hosts_victimas} | IPs Atacantes: {str_ips_atacantes}\n• Vector"
-      f" Coincidente Principal: {', '.join(inc_meta['matched_vectors'])}\n•"
-      f" Síntesis Analítica: {extracto}"
+      f" Coincidente Principal: {', '.join(inc_meta['matched_vectors'])}\n• TTPs"
+      f" MITRE ATT&CK: {inc_meta['mitre_technique']}\n• Síntesis Analítica:"
+      f" {extracto}"
   )
 else:
   summary_val = (
@@ -940,8 +975,9 @@ else:
       f"• Cuentas Comprometidas: {str_usuarios}\n"
       f"• Vector Primario Coincidente:"
       f" {', '.join(inc_meta['matched_vectors'])}\n"
+      f"• TTPs MITRE ATT&CK: {inc_meta['mitre_technique']}\n"
       f"• Evidencia Forense: Se correlacionaron {len(df_incidente)} eventos de"
-      f" telemetría confirmando patrones de {inc_meta['mitre_technique']}.\n"
+      f" telemetría confirmando patrones maliciosos.\n"
       f"• Directiva Inmediata: {inc_meta['action']}"
   )
 
@@ -970,6 +1006,7 @@ def generar_pdf(
     target,
     ai_text,
     vectores_match,
+    mitre_tech,
 ):
   buffer = io.BytesIO()
   doc = SimpleDocTemplate(
@@ -1017,6 +1054,7 @@ def generar_pdf(
           f"<b>Incidente:</b> {inc_titulo}<br/>"
           f"<b>Analista:</b> {analista} | <b>Nivel de Riesgo:</b> {riesgo}<br/>"
           f"<b>Vectores Coincidentes:</b> {', '.join(vectores_match)}<br/>"
+          f"<b>TTPs (MITRE ATT&CK):</b> {mitre_tech}<br/>"
           f"<b>IPs Atacantes / Origen:</b> {attacker}<br/>"
           f"<b>Activos Víctima:</b> {target} | <b>Usuarios:</b> {str_usuarios}",
           body_style,
@@ -1036,7 +1074,8 @@ def generar_pdf(
       if ai_text
       else (
           f"Se analizó la telemetría del incidente {inc_id}. La correlación confirma la afectación de los activos "
-          f"{target} por parte de las fuentes {attacker}. Se identificaron patrones coincidentes con {', '.join(vectores_match)}."
+          f"{target} por parte de las fuentes {attacker}. Se identificaron patrones coincidentes con {', '.join(vectores_match)} "
+          f"y las técnicas {mitre_tech} según la base de conocimiento de MITRE ATT&CK."
       )
   )
   story.append(Paragraph(texto_ai, body_style))
@@ -1083,6 +1122,7 @@ if st.button(f"📥 Descargar Informe Técnico Oficial en PDF ({selected_inc_key
       str_hosts_victimas,
       ai_text_actual,
       inc_meta["matched_vectors"],
+      inc_meta["mitre_technique"],
   )
   st.download_button(
       label=f"Descargar PDF Oficial ({selected_inc_key})",
