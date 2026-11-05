@@ -10,26 +10,24 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 # ==========================================================
-# CONFIGURACIÓN Y TEMA VISUAL ESTILO STELLAR CYBER (OPEN XDR)
+# CONFIGURACIÓN Y TEMA VISUAL SOC DARK NEXT-GEN (NEUTRAL BRAND)
 # ==========================================================
 st.set_page_config(
-    page_title="StellarSOC - XDR L2 Workbench",
+    page_title="SOC L2 Defense Workbench",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Inyección de estilos CSS inspirados en la interfaz de Stellar Cyber (Dark Theme)
 st.markdown(
     """
 <style>
-    /* Fondo general oscuro estilo SOC Next-Gen */
+    /* Tema oscuro profundo y profesional */
     .stApp {
         background-color: #0B132B;
         color: #E2E8F0;
     }
-    /* Título principal con brillo Cyber */
-    .stellar-header {
+    .main-title {
         font-size: 2.2rem;
         font-weight: 800;
         background: linear-gradient(90deg, #00F0FF, #3B82F6, #10B981);
@@ -37,18 +35,18 @@ st.markdown(
         -webkit-text-fill-color: transparent;
         margin-bottom: 0.2rem;
     }
-    .stellar-sub {
+    .sub-title {
         font-size: 1rem;
         color: #94A3B8;
         margin-bottom: 1.5rem;
     }
-    /* Tarjetas de Métricas XDR */
+    /* Tarjetas de Métricas */
     div[data-testid="stMetric"] {
         background-color: #1C2541;
         border: 1px solid #3A506B;
-        padding: 15px;
+        padding: 14px;
         border-radius: 10px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
     }
     div[data-testid="stMetricLabel"] {
         color: #94A3B8 !important;
@@ -57,39 +55,40 @@ st.markdown(
     div[data-testid="stMetricValue"] {
         color: #00F0FF !important;
         font-family: monospace;
-        font-size: 1.9rem;
+        font-size: 1.8rem;
     }
-    /* Cajas y Contenedores */
-    div[data-testid="stVerticalBlock"] > div[data-testid="stContainer"] {
-        background-color: #111D4A;
-        border: 1px solid #1E3A8A;
-        border-radius: 10px;
-        padding: 18px;
-    }
-    /* Badges de Severidad */
+    /* Badges de Estado */
     .badge-critical {
         background-color: #EF4444;
         color: #FFFFFF;
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 8px;
         font-weight: bold;
+        font-size: 0.8rem;
     }
     .badge-high {
         background-color: #F97316;
         color: #FFFFFF;
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 8px;
         font-weight: bold;
+        font-size: 0.8rem;
     }
     .badge-medium {
         background-color: #EAB308;
         color: #1E293B;
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 8px;
         font-weight: bold;
+        font-size: 0.8rem;
+    }
+    .badge-category {
+        background-color: #1E3A8A;
+        color: #93C5FD;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
     }
 </style>
 """,
@@ -97,17 +96,16 @@ st.markdown(
 )
 
 st.markdown(
-    "<div class='stellar-header'>⚡ STELLAR-XDR | SOC Nivel 2 Incident"
-    " Workbench</div>",
+    "<div class='main-title'>🛡️ SOC L2 DEFENSE WORKBENCH</div>",
     unsafe_allow_html=True,
 )
 st.markdown(
-    "<div class='stellar-sub'>Consola Operativa Multicapa con IA: Triage,"
-    " Correlación de Kill Chain y Detección de Amenazas Avanzadas.</div>",
+    "<div class='sub-title'>Plataforma Unificada de Operaciones de Seguridad:"
+    " Triage Heurístico, Correlación de Kill Chain y Análisis con IA.</div>",
     unsafe_allow_html=True,
 )
 
-# Inicialización de la API de IA (Secrets de Streamlit o variables de entorno)
+# Inicialización de API de IA (Secrets de Streamlit o variables de entorno)
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 client = None
 if api_key:
@@ -116,29 +114,38 @@ if api_key:
   except Exception as e:
     st.sidebar.warning(f"Error cliente IA: {e}")
 
-# Sidebar estilo Plataforma de Seguridad
+# Sidebar Operativo
 with st.sidebar:
-  st.image(
-      "[suspicious link removed]", width=64
+  st.markdown(
+      "<div style='text-align: center; font-size: 2.8rem; margin-bottom:"
+      " 0.3rem;'>🛡️</div>",
+      unsafe_allow_html=True,
   )
-  st.markdown("### **Panel de Control XDR**")
+  st.markdown(
+      "<h3 style='text-align: center; color: #00F0FF; margin-top: 0;'>Security"
+      " Operations</h3>",
+      unsafe_allow_html=True,
+  )
   if api_key:
-    st.success("🟢 IA Engine: Activo")
+    st.success("🟢 Motor de IA: Activo")
   else:
-    st.error("🔴 IA Engine: Clave ausente")
+    st.error("🔴 Motor de IA: Sin clave detectada")
   st.markdown("---")
-  st.markdown("**Plataforma:** Stellar Cyber Style")
-  st.markdown("**Metodología:** MITRE ATT&CK & D3FEND")
-  st.markdown("**Analista:** Nivel 2 (Triage Avanzado)")
+  st.markdown("**Nivel Operativo:** Analista SOC L2")
+  st.markdown("**Marcos de Referencia:**")
+  st.markdown("• MITRE ATT&CK®")
+  st.markdown("• MITRE D3FEND™")
+  st.markdown("---")
+  st.caption("Bootcamp de Ciberseguridad Defensiva")
 
 # ==========================================================
 # 1. CARGA DE ARCHIVOS
 # ==========================================================
-st.markdown("### 📥 1. Ingesta de Telemetría (Sensor Logs)")
+st.markdown("### 📥 1. Ingesta de Telemetría (Security Event Logs)")
 uploaded_file = st.file_uploader(
     "Cargar dataset consolidado de seguridad (.CSV)",
     type=["csv", "txt", "log"],
-    help="Admite archivos de logs delimitados por ';' o ','",
+    help="Admite archivos delimitados por ';' o ','",
 )
 
 if uploaded_file is not None:
@@ -155,27 +162,90 @@ if uploaded_file is not None:
     df["Source_IP"] = df["Source_IP"].fillna("N/A").astype(str)
     df["Destination"] = df["Destination"].fillna("Local").astype(str)
     df["Process_CommandLine"] = df["Process_CommandLine"].fillna("").astype(str)
+    df["Event_Description"] = df["Event_Description"].fillna("").astype(str)
     st.success(
-        f"✅ Telemetría ingestada exitosamente: **{len(df):,} eventos** listos"
-        " para correlación."
+        f"✅ Telemetría cargada con éxito: **{len(df):,} eventos** registrados."
     )
   except Exception as e:
     st.error(f"Error al procesar el archivo: {e}")
     st.stop()
 else:
-  st.info("💡 Sube tu archivo CSV de logs para inicializar el motor de triage.")
+  st.info("💡 Sube tu archivo CSV de logs para activar el análisis completo.")
   st.stop()
 
 # ==========================================================
-# 2. CATÁLOGO COMPLETO DE INCIDENTES Y SELECTOR LIMPIO
+# MOTOR DE CLASIFICACIÓN HEURÍSTICA DE ANOMALÍAS (6 VECTORES)
+# ==========================================================
+
+
+def clasificar_vector(row):
+  cmd = row["Process_CommandLine"].lower()
+  desc = row["Event_Description"].lower()
+  eid = row["Event_ID"]
+
+  # 1. Fuerza Bruta
+  if eid == "4625" or "failed to log on" in desc:
+    return "Fuerza Bruta (Logon Failure)"
+  # 2. Inicios de Sesión Sospechosos
+  if "logontype=10" in desc or (
+      eid == "4624"
+      and (
+          "203.0.113" in row["Source_IP"]
+          or row["User"] in ["CORP\\admin", "CORP\\backupsvc"]
+      )
+  ):
+    return "Inicio de Sesión Sospechoso (RDP / Anómalo)"
+  # 3. Escalamiento de Privilegios
+  if (
+      eid == "4672"
+      or "special privileges" in desc
+      or "get-localgroupmember" in cmd
+  ):
+    return "Escalamiento / Abuso de Privilegios"
+  # 4. Comandos y Procesos Sospechosos
+  if any(
+      k in cmd
+      for k in [
+          "powershell",
+          "-encodedcommand",
+          "vssadmin",
+          "whoami",
+          "cmd.exe /c",
+      ]
+  ):
+    return "Comandos y Procesos Sospechosos (LOLBins)"
+  # 5. Movimiento Lateral
+  if (
+      eid in ["5140", "5145"]
+      or "logontype=3" in desc
+      or "\\\\fs-srv01" in row["Destination"].lower()
+  ):
+    return "Movimiento Lateral (SMB / Shares)"
+  # 6. Otras Anomalías
+  if (
+      "tar.exe" in cmd
+      or "203.0.113.88" in row["Destination"]
+      or any(k in cmd for k in ["/admin/", "/api/v1/export"])
+  ):
+    return "Otras Anomalías (Exfiltración / Web Fuzzing)"
+
+  return "Actividad Normal / Línea Base"
+
+
+df["Vector_Analitico"] = df.apply(clasificar_vector, axis=1)
+
+# ==========================================================
+# 2. SELECTOR DE INCIDENTES Y CORRELACIÓN DE KILL CHAIN
 # ==========================================================
 st.markdown("---")
 st.markdown("### 🎯 2. Selector Maestro de Incidentes Correlacionados")
 
-# Catálogo completo con los 4 incidentes reales presentes en el archivo
 catalog_incidentes = {
     "INC-01": {
-        "title": "INC-01: Intrusión RDP, LOLBins y Exfiltración de Finanzas",
+        "title": (
+            "INC-01: Intrusión RDP, Ejecución de LOLBins y Exfiltración de"
+            " Finanzas"
+        ),
         "badge": "CRÍTICO",
         "attacker": (
             "203.0.113.88 (C2) / Cuenta comprometida: CORP\\admin"
@@ -187,7 +257,8 @@ catalog_incidentes = {
             "1. Acceso RDP exitoso (LogonType=10) en APP-SRV01 -> 2. Invocación"
             " de PowerShell ofuscado (-EncodedCommand) -> 3. Movimiento lateral"
             " hacia FS-SRV01 accediendo a Budget2027.xlsx -> 4. Empaquetamiento"
-            " con tar.exe -> 5. Exfiltración saliente a IP 203.0.113.88:443."
+            " con tar.exe -> 5. Conexión externa de salida a IP"
+            " 203.0.113.88:443."
         ),
         "filter": lambda d: d[
             (d["Hostname"].isin(["APP-SRV01", "FS-SRV01"]))
@@ -219,7 +290,7 @@ catalog_incidentes = {
             "INC-02: Fuerza Bruta / Password Spraying en Directorio Activo"
         ),
         "badge": "ALTO",
-        "attacker": "Múltiples estaciones internas (10.10.1.22, 10.10.2.15)",
+        "attacker": "Estaciones internas (10.10.1.22, 10.10.2.15)",
         "target": "Controlador de Dominio DC-01 (Cuentas: jlopez, slopez, helpdesk)",
         "hosts": ["DC-01", "DC01"],
         "kill_chain": (
@@ -329,7 +400,6 @@ catalog_incidentes = {
     },
 }
 
-# 🎯 SELECTOR LIMPIO QUE INVITA A SELECCIONAR EL INCIDENTE
 selected_inc_key = st.selectbox(
     "👉 **Selecciona el Incidente de Seguridad que deseas investigar y"
     " correlacionar:**",
@@ -342,9 +412,9 @@ selected_inc_key = st.selectbox(
 
 inc_meta = catalog_incidentes[selected_inc_key]
 
-# 🎯 RESUMEN VISUAL DEL INCIDENTE ACTIVO TIPO STELLAR CYBER
+# Resumen visual del incidente activo
 with st.container():
-  c1, c2 = st.columns([3, 1])
+  c1, c2 = st.columns()
   with c1:
     st.markdown(f"#### 🔎 **{inc_meta['title']}**")
     st.markdown(
@@ -364,16 +434,16 @@ with st.container():
           f"<span class='badge-high'>{inc_meta['badge']}</span>",
           unsafe_allow_html=True,
       )
-    st.caption(f"Hosts: {', '.join(inc_meta['hosts'])}")
+    st.caption(f"Hosts Comprometidos: {', '.join(inc_meta['hosts'])}")
 
-# DATASET CONTEXTUAL DEL INCIDENTE
+# DATASET CONTEXTUAL DEL INCIDENTE SELECCIONADO
 df_incidente = inc_meta["filter"](df).copy().sort_values("Timestamp")
 if df_incidente.empty:
   df_incidente = df[df["Hostname"].isin(inc_meta["hosts"])].copy()
 
-# 🎯 TELEMETRÍA DETALLADA CON IP ATACANTE Y VÍCTIMA
+# Despliegue de Telemetría Detallada
 with st.expander(
-    f"📋 Telemetría Crítica Correlacionada ({len(df_incidente)} registros)"
+    f"📋 Telemetría Crítica Correlacionada ({len(df_incidente)} eventos)"
     " - Detalle Atacante vs. Víctima",
     expanded=True,
 ):
@@ -386,6 +456,7 @@ with st.expander(
           "User",
           "Event_ID",
           "Severity",
+          "Vector_Analitico",
           "Process_CommandLine",
           "Event_Description",
       ]].rename(
@@ -393,13 +464,14 @@ with st.expander(
               "Source_IP": "IP Origen (Atacante)",
               "Hostname": "Host Víctima",
               "Destination": "Destino / Recurso",
+              "Vector_Analitico": "Vector Detectado",
           }
       ),
       use_container_width=True,
   )
 
-# Botón de Análisis de IA
-if st.button(f"🤖 Ejecutar Análisis Asistido por IA sobre {selected_inc_key}"):
+# Botón de Análisis de IA Contextual
+if st.button(f"🤖 Ejecutar Evaluación Asistida por IA sobre {selected_inc_key}"):
   if not client:
     st.error(
         "Clave 'GEMINI_API_KEY' no detectada en Secrets. Configúrala en"
@@ -413,14 +485,14 @@ if st.button(f"🤖 Ejecutar Análisis Asistido por IA sobre {selected_inc_key}"
             Analiza la telemetría del incidente: {inc_meta['title']}.
             Atacante: {inc_meta['attacker']} | Víctima: {inc_meta['target']}
             
-            Logs de telemetría:
+            Logs empíricos:
             {sample_logs}
             
             Genera un assessment técnico conciso:
             1. Hipótesis del vector y causalidad temporal.
-            2. Mapeo TTPs MITRE ATT&CK.
-            3. Confidence Level (Alto/Medio/Bajo).
-            4. Contramedidas defensivas inmediatas (MITRE D3FEND).
+            2. Mapeo de TTPs según MITRE ATT&CK.
+            3. Nivel de Confianza (Confidence: Alto/Medio/Bajo).
+            4. Contramedidas defensivas inmediatas basadas en MITRE D3FEND.
             """
       for m in [
           "gemini-2.0-flash",
@@ -448,13 +520,12 @@ st.markdown(
     f"### 📊 3. Dashboard Interactivo de Telemetría ({selected_inc_key})"
 )
 
-# CONTROLES INTERACTIVOS DE FILTRO
 with st.container():
-  col_f1, col_f2 = st.columns(2)
+  col_f1, col_f2, col_f3 = st.columns(3)
   with col_f1:
     sevs_disponibles = sorted(list(df_incidente["Severity"].unique()))
     filtro_sev = st.multiselect(
-        "Filtrar por Nivel de Severidad:",
+        "Filtrar por Severidad:",
         options=sevs_disponibles,
         default=sevs_disponibles,
     )
@@ -463,22 +534,29 @@ with st.container():
         list(df_incidente["Hostname"].unique())
     )
     filtro_host = st.selectbox(
-        "Profundizar (Drill-Down) en Host específico:", hosts_en_inc
+        "Filtrar por Host específico:", hosts_en_inc
     )
+  with col_f3:
+    vectores_en_inc = ["Todos los vectores"] + sorted(
+        list(df_incidente["Vector_Analitico"].unique())
+    )
+    filtro_vec = st.selectbox("Filtrar por Vector:", vectores_en_inc)
 
-# APLICAR FILTROS REACTIVOS AL DATASET DEL DASHBOARD
+# APLICACIÓN DE FILTROS AL DASHBOARD
 df_dash = df_incidente[df_incidente["Severity"].isin(filtro_sev)].copy()
 if filtro_host != "Todos los del incidente":
   df_dash = df_dash[df_dash["Hostname"] == filtro_host]
+if filtro_vec != "Todos los vectores":
+  df_dash = df_dash[df_dash["Vector_Analitico"] == filtro_vec]
 
-# 🎯 TARJETAS DE MÉTRICAS DINÁMICAS (SE ACTUALIZAN AL CAMBIAR FILTROS)
+# Tarjetas numéricas reactivas
 m1, m2, m3, m4 = st.columns(4)
-m1.metric("Total Eventos Filtrados", len(df_dash))
+m1.metric("Eventos Filtrados", len(df_dash))
 m2.metric(
-    "Alertas Críticas / High",
+    "Alertas High / Críticas",
     len(df_dash[df_dash["Severity"].isin(["High", "Critical"])]),
 )
-m3.metric("Hosts Involucrados", df_dash["Hostname"].nunique())
+m3.metric("Hosts Comprometidos", df_dash["Hostname"].nunique())
 m4.metric("Usuarios Activos", df_dash["User"].nunique())
 
 d_col1, d_col2 = st.columns(2)
@@ -487,7 +565,7 @@ with d_col1:
     fig_pie = px.pie(
         df_dash,
         names="Severity",
-        title="Distribución de Severidad en la Selección",
+        title="Distribución de Severidad",
         color="Severity",
         color_discrete_map={
             "High": "#EF4444",
@@ -497,31 +575,30 @@ with d_col1:
         },
         template="plotly_dark",
     )
+    fig_pie.update_layout(margin=dict(t=40, b=20, l=20, r=20))
     st.plotly_chart(fig_pie, use_container_width=True)
   else:
-    st.info("Sin eventos para el filtro seleccionado.")
+    st.info("Sin eventos para la combinación seleccionada.")
 
 with d_col2:
   if not df_dash.empty:
-    top_h = (
-        df_dash.groupby("Hostname")
+    fig_vec = px.bar(
+        df_dash.groupby("Vector_Analitico")
         .size()
-        .reset_index(name="Eventos")
-        .sort_values(by="Eventos", ascending=False)
-    )
-    fig_bar = px.bar(
-        top_h,
-        x="Hostname",
-        y="Eventos",
-        color="Eventos",
-        color_continuous_scale="Viridis",
-        title="Frecuencia de Alertas por Activo (Dinámico)",
+        .reset_index(name="Cantidad")
+        .sort_values(by="Cantidad", ascending=False),
+        x="Vector_Analitico",
+        y="Cantidad",
+        color="Cantidad",
+        color_continuous_scale="Teal",
+        title="Eventos por Vector de Ataque Detectado",
         template="plotly_dark",
     )
-    st.plotly_chart(fig_bar, use_container_width=True)
+    fig_vec.update_layout(margin=dict(t=40, b=20, l=20, r=20))
+    st.plotly_chart(fig_vec, use_container_width=True)
 
 # ==========================================================
-# 4. CLASIFICACIÓN DE RIESGOS (SINCRONIZADA CON EL INCIDENTE)
+# 4. CLASIFICACIÓN DE RIESGOS (MATRIZ SOC L2)
 # ==========================================================
 st.markdown("---")
 st.markdown(
@@ -534,24 +611,58 @@ st.markdown(
 )
 st.warning(f"**Directiva de Respuesta Operativa:** {inc_meta['action']}")
 
+# Desglose de los 6 vectores en la matriz técnica
 risk_matrix_display = {
-    "Categoría de Amenaza (MITRE)": [
-        inc_meta["mitre_technique"].split(",")[0],
-        inc_meta["mitre_technique"].split(",")[1]
-        if "," in inc_meta["mitre_technique"]
-        else "Persistencia / Evasión",
-        "Control Operativo de Seguridad",
+    "Vector / Categoría Heurística": [
+        "Fuerza Bruta & Credenciales",
+        "Inicios de Sesión Sospechosos",
+        "Escalamiento de Privilegios",
+        "Comandos y Procesos (LOLBins)",
+        "Movimiento Lateral",
+        "Otras Anomalías / Exfiltración",
     ],
-    "Justificación / Evidencia Empírica en Logs": [
+    "Estado en este Incidente": [
+        "Detectado" if "INC-02" == selected_inc_key else "Monitoreado",
+        "Detectado"
+        if selected_inc_key in ["INC-01", "INC-04"]
+        else "Línea Base",
+        "Detectado"
+        if selected_inc_key in ["INC-01", "INC-04"]
+        else "Línea Base",
+        "Detectado"
+        if selected_inc_key in ["INC-01", "INC-03", "INC-04"]
+        else "Línea Base",
+        "Detectado"
+        if selected_inc_key in ["INC-01", "INC-04"]
+        else "Línea Base",
+        "Detectado"
+        if selected_inc_key in ["INC-01", "INC-03", "INC-04"]
+        else "Línea Base",
+    ],
+    "Justificación / Evidencia en Telemetría": [
+        "Fallas de autenticación 4625 secuenciales sobre cuentas corporativas.",
+        (
+            f"LogonType=10 remoto o accesos privilegiados en"
+            f" {', '.join(inc_meta['hosts'])}."
+        ),
+        "Consultas a grupos locales o privilegios especiales asignados (4672).",
+        (
+            f"Invocación de procesos sospechosos acordes a"
+            f" {inc_meta['mitre_technique']}."
+        ),
+        (
+            f"Conexiones de red internas o accesos a recursos compartidos en"
+            f" {inc_meta['target']}."
+        ),
         inc_meta["justification"],
-        f"Afectación confirmada en los activos víctima: {', '.join(inc_meta['hosts'])}.",
-        f"Acción coordinada acorde a la criticidad {inc_meta['risk_level']}.",
     ],
-    "Nivel de Confianza (Confidence)": ["Alto", "Alto", "Alto"],
     "Decisión Operativa Inmediata": [
-        "Aislamiento de Host / Bloqueo Firewall",
-        "Revocación de Credenciales en AD",
-        "Preservación de Evidencias (DFIR L3)",
+        "Bloqueo temporal de cuentas y análisis de IPs origen",
+        "Revocación de tokens y aislamiento del host",
+        "Auditoría de membresías en Directorio Activo",
+        "Terminar proceso y bloquear hash en EDR",
+        "Revocar accesos de red y aislar servidor de archivos",
+        inc_meta["action"],
     ],
 }
 st.dataframe(pd.DataFrame(risk_matrix_display), use_container_width=True)
@@ -588,7 +699,7 @@ executive_summary = st.text_area(
 analyst_name = st.text_input("Analista Responsable:", value="Analista SOC Nivel 2")
 
 # ==========================================================
-# 6. EXPORTACIÓN A PDF
+# 6. EXPORTACIÓN EN PDF
 # ==========================================================
 st.markdown("---")
 st.markdown("### 📄 6. Exportación de Informe Técnico a PDF")
@@ -634,7 +745,7 @@ def generar_pdf(
   story = []
   story.append(
       Paragraph(
-          f"INFORME TÉCNICO DE INCIDENTE - STELLAR SOC L2 ({inc_id})",
+          f"INFORME TÉCNICO DE INCIDENTE - SOC NIVEL 2 ({inc_id})",
           title_style,
       )
   )
@@ -681,7 +792,8 @@ def generar_pdf(
   )
   story.append(
       Paragraph(
-          "• Bloquear IPs y hashes maliciosos en firewall y EDR.", body_style
+          "• Bloquear IPs y hashes maliciosos en firewall perimetral y EDR.",
+          body_style,
       )
   )
   story.append(
