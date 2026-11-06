@@ -30,7 +30,7 @@ except ImportError:
 # CONFIGURACIÓN Y TEMA VISUAL CLARO (ALTO CONTRASTE)
 # ==========================================================
 st.set_page_config(
-    page_title="SOC L2 - JRBL - Plataforma de Defensa",
+    page_title="SOC L2 - JRBV - Plataforma de Defensa",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -53,11 +53,11 @@ st.markdown(
 )
 
 st.markdown(
-    "<div class='main-title'>🛡️ SOC L2 - JRBL - Plataforma de Defensa</div>",
+    "<div class='main-title'>🛡️ SOC L2 - JRBV - Plataforma de Defensa</div>",
     unsafe_allow_html=True,
 )
 st.markdown(
-    "<div class='sub-title'>Plataforma Unificada de Operaciones de Seguridad: Triage Heurístico, Correlación de Kill Chain y Análisis con IA.</div>",
+    "<div class='sub-title'>Plataforma Unificada de Operaciones de Seguridad: Triage Heurístico, Correlación de Kill Chain y Análisis con IA. Desarrollado por Juan Balcázar</div>",
     unsafe_allow_html=True,
 )
 
@@ -86,7 +86,7 @@ with st.sidebar:
       unsafe_allow_html=True,
   )
   st.markdown(
-      "<h3 style='text-align: center; color: #1E40AF; margin-top: 0;'>SOC L2 - JRBL</h3>",
+      "<h3 style='text-align: center; color: #1E40AF; margin-top: 0;'>SOC L2 - JRBV</h3>",
       unsafe_allow_html=True,
   )
   if api_key:
